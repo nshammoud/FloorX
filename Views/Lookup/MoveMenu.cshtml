@@ -1,0 +1,16 @@
+﻿@model MoveMenuModel
+
+@if( Model.HasOpts){
+    var opts = Model.GetOpts();
+
+<div class="btn-group">
+  <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+    Move
+  </button>
+  <ul class="dropdown-menu">
+  @foreach(var opt in opts)  {
+    <li><a class ="dropdown-item" href="@Url.Action(opt.Action, opt.Controller, opt.Args)">@opt.Label</a></li>
+  }
+  </ul>
+</div>
+}

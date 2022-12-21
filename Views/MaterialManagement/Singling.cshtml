@@ -1,0 +1,72 @@
+﻿@model KQF.Floor.Web.Models.SplitPostModel
+
+@* 
+  --- scan cart (material input) - get total weight and item/lot/qty
+  --- scan another cart (destination) - post a partial weight, no of rods
+  --- scan multiple destination carts until fully accounted for (2 to 4 carts) max 4
+*@
+@if(!String.IsNullOrEmpty(Model.Message)){
+      <div class="row p-2 m-2">
+          <div class="col-12 alert @(Model.IsSuccess ? "alert-success": "alert-danger")">
+              @Model.Message
+          </div>
+      </div>
+  }
+
+<form method="post">
+  
+  <div class="row mt-2 mb-3">
+      <div class="col-12">
+          <h3>Material Management: Singling</h3>
+      </div>
+  </div>
+  <div class="row m-2">
+      <div class="col-12 p-2 bg-light">
+           <label for="exampleFormControlInput1" class="form-label">Source Cart or Container</label>
+            <input type="text" class="form-control initial-focus" name="@Html.NameFor(x=> x.Source)" placeholder="Cart or Container #" value="@Model.Source">
+
+      </div>
+      
+    </div>
+    <div class="row m-2">
+      <div class="col-1 offset-5">
+          <h2>
+              <i class="gg-arrow-down"></i>
+          </h2>
+      </div>
+      <div class="col-sm-12 col-md-8  bg-light p-2">
+          <label for="exampleFormControlInput1" class="form-label">Destination Cart </label>
+            <input type="text" class="form-control" name="@Html.NameFor(x=> x.Destination)" placeholder="Cart #" value="@Model.Destination">
+        </div>
+      <div class="col-sm-12 col-md-2  p-2 bg-light">
+           <label for="exampleFormControlInput1" class="form-label">Weight</label>
+            <input type="number" step=".01" class="form-control" name="@Html.NameFor(x=> x.Weight)" placeholder="Weight" value="@Model.Weight">
+
+      </div>
+      <div class="col-sm-12 col-md-2 p-2 bg-light">
+           <label for="exampleFormControlInput1" class="form-label">No. Rods</label>
+            <input type="number" class="form-control" name="@Html.NameFor(x=> x.NoOfRods)" placeholder="No. Of Rods" value="@Model.NoOfRods">
+      </div>
+  </div>
+  <div class="row mt-5">
+      <div class="col-8 offset-2">
+          <button type="submit" class="btn btn-lg btn-primary w-100">Post</button>
+      </div>
+  </div>
+</form>
+
+@section scripts{
+    <script type="text/javascript">
+        $(document).ready(() => {
+            var inputs = $("form :input");
+
+            $(inputs).not(":button").keypress(function (e) {
+                if (e.keyCode == 13) {
+                    inputs[inputs.index(this) + 1].focus();
+                    return false;
+                }
+            });
+        });
+    </script>
+}
+  

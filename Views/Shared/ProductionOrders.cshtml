@@ -1,0 +1,137 @@
+﻿@model IEnumerable<KQF.Floor.Web.Models.ProductionOrder>
+
+<style>
+    .c {
+        text-align: center;
+    }
+
+    .flex-row {
+        flex-direction: column;
+        flex-wrap: wrap;
+        display: flex;
+    }
+
+
+    .fcol-1 {
+        flex: 2;
+    }
+
+    .fcol-2 {
+        flex: 3;
+    }
+
+    .fcol-3 {
+        flex: 4;
+    }
+</style>
+@{
+    var hideOutputCols = ((ViewData["IsConsumption"] as bool?) ?? false);
+    var f1 = hideOutputCols ? 2 : 4;
+    var f2 = hideOutputCols ? 5 : 9;
+}
+
+<table class="table table-responsive table-striped" id="jobTable">
+    <thead>
+        <tr>
+            <td style="width:50px;"></td>
+            <td colspan="2">
+                <div class="flex-row  fw-bold">
+                    <div class="fcol-1">
+                        <input id="jobScanInput" style="margin-left:-50px;width:115%;" type="text" class="form-control" placeholder="Job No." />
+                    </div>
+                    <div class="fcol-1">Item Cat.</div>
+                    <div class="fcol-2">Finished Item</div>
+                    @if (!hideOutputCols)
+                    {
+                        <div class="fcol-1 c">
+                            Qty
+
+                        </div>
+                        <div class="fcol-1 c">UoM</div>
+                        <div class="fcol-1 c">Finished Qty</div>
+                    }
+                </div>
+            </td>
+            @*<th></th>
+                <th>Job No.</th>
+                <th>Start Date</th>
+                <th>Item Cat.</th>
+                <th colspan="2">Finished Item</th>
+                <th class="c">Qty</th>
+                <th class="c">UoM</th>
+                <th class="c">Finished Qty</th>*@
+        </tr>
+    </thead>
+    <tbody>
+        @if (Model.Count() == 0)
+        {
+            <tr><td class="" colspan="2"><div class="alert alert-warning">There are no jobs for this date.</div></td></tr>
+        }
+
+        @foreach (var job in Model)
+        {
+            <tr data-job-id="@job.JobNumber">
+                <td style="width:50px;">
+                    <button data-job-id="@job.JobNumber"
+                            data-validate-every-output="@(job.ValidateEveryOutput ? "true" : "false")"
+                            data-job-date="@job.StartDate.ToString("G")"
+                            class="btn btn-outline-success btn-job-toggle"
+                            onclick="selectJob(
+    '@job.JobNumber',
+    '@job.ItemNumber',
+    @String.Format("{0:0.00}", job.Quantity),
+    @String.Format("{0:0.00}", job.FinishedQuantity),
+    '@job.UnitOfMeasure',
+    '@job.ScreenType',
+    '@job.ItemCategory',
+    '@(job.ShowStandardReporting? String.Format("Std Reporting Qty: {0:0.00} {1}", job.StandardReportingQty, job.StandardReportingUoM) : "")',
+    '@(job.ShowStandardReporting)',
+    '@(job.StandardReportingQty)',
+    '@(job.StandardReportingUoM)',
+    @(job.CartOrContainerRequired ? "true" : "false"),
+    '@(job.WorkCenter)',
+    '@(job.RequireMixerLine ? job.ResourceCaption : "")',
+    @(string.Format("{0:0.00}", job.RemainingQuantity)),
+    @(job.EnableItemValidation ? "true" : "false"),
+    @String.Format("{0:0.0}", job.AllowedOverOutputPercent),
+     @(job.AllowOverReportConsumption ? "true" : "false")
+    );">
+                        <i class="fa fa-chevron-right"></i>
+                    </button>
+                </td>
+                <td style="">
+                    <div class="flex-row fw-bold">
+                        <!-- Data dump of job
+                        @Newtonsoft.Json.JsonConvert.SerializeObject(job)
+                        -->
+                        <div class="fcol-1">
+                            <!-- @job.RequireMixerLine
+                            @job.ResourceCaption -->
+                            <a href="#" class="text-dark" onclick="showJFHistoryModal('@job.JobNumber', '@ViewData["ProductionOrderListSource"]');">
+                                @job.JobNumber <i class="fa fa-history"></i>
+                            </a>
+                        </div>
+                        
+                        <div class="fcol-1">@job.ItemCategory</div>
+                        <div class="fcol-2">@job.ItemNumber </div>
+                        
+                        @if (!hideOutputCols)
+                        {
+                            <div class="c fcol-1">@String.Format("{0:0.00}", job.Quantity)</div>
+                            <div class="c fcol-1">@job.UnitOfMeasure</div>
+                            <div class="c fcol-1"> <div class="text-success border-success border-2"> @String.Format("{0:0.00}", job.FinishedQuantity) </div></div>
+                        }
+                    </div>
+                    
+                    <div class="flex-row">
+                        <div style="flex:@f1;">
+                            @job.StartDate.ToString("MM/dd/yy HH:mm")
+                        </div>
+                        <div style="flex:@f2;"> @job.ItemDescription</div>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+

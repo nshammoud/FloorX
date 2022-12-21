@@ -1,0 +1,656 @@
+﻿@model System.DateTime
+@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+
+<div class="row mt-2">
+    <div class="col-sm-12">
+        <div class="card  box-shadow">
+            <h5 class="card-header">
+                Output Journal
+                @if (User.HasRole("supervisor", ViewData["CurrentLocation"] as string))
+                {
+                    <input type="date" value="@Model.ToString("yyyy-MM-dd")" id="dateFilter" class="form-control d-inline-block" style="max-width:250px;" />
+                }
+
+                <code class="float-end mt-1" style="font-size:13px;">
+                    <ul class="list-inline">
+                        <li class="list-inline-item">[@ViewData["CurrentLocation"]</li>
+                        <li class="list-inline-item">
+
+                            <span class="current-time">
+                                @DateTime.Now.ToString("MM/dd/yyyy HH:mm")
+                            </span>
+
+                            &gt;]
+                        </li>
+
+
+                        <li class="list-inline-item">
+                            @Context.Connection.RemoteIpAddress.ToString()
+                            @*@System.Net.Dns.GetHostEntry(Context.Connection.RemoteIpAddress).HostName.Split(".", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()*@
+                        </li>
+                        <li class="list-inline-item text-decoration-underline">
+                            @User.UserName()
+                        </li>
+
+
+                    </ul>
+                </code>
+            </h5>
+            <div class="card-body">
+                <div class="row">
+
+                    <div class="col-sm-12" id="jobList">
+
+
+
+
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="workContainer" class="visually-hidden mt-2">
+    <div class="col-sm-12">
+        <div class="card box-shadow bg-light">
+            <div class="card-body">
+
+
+                <div class="row mb-3">
+                    <div class="col-sm-4 p-2">
+                        <label for="exampleFormControlInput1 " class="form-label h4 show2 hide1 hide3 mixer-ctrl" id="mixerCaption">Mixer</label>
+                        <select class="form-select show2 hide1 hide3 validated-ctrl mixer-ctrl" aria-label="Default select example" id="mixerSelect">
+                            <option selected value="0">Select a Mixer</option>
+                            <option value="1">Mixer 1</option>
+                            <option value="2">Mixer 2</option>
+                            <option value="3">Mixer 3</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-8 bg-body p-2">
+                        <div class="progress">
+                            <div id="workProgress" class="progress-bar progress-bar-striped bg-success" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-sm-4">
+                                <h4>Remaining <span class="badge bg-secondary text-light" id="workRemaining">46</span></h4>
+                            </div>
+                            <div class="col-sm-4">
+                                <h4>UoM <span class="badge bg-secondary text-light" id="workUoM">Batch</span></h4>
+                            </div>
+                            <div class="col-sm-4 border-start border-dark">
+                                <h4>Finished <span class="badge bg-success" id="workFinished">2</span></h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+
+                    <form>
+                        <div class="row mb-3">
+                            <label for="inputQuantity" class="col-sm-2 col-form-label">Qty.</label>
+
+
+                            <div class="col-sm-4">
+                                <div class="input-group">
+                                    <button type="button" id="inputQuantityBtn" class="btn btn-success hide3 hide1 show2" onclick="setInputQtyToStdQty()">
+                                        <span class="button-text"></span>
+                                        <i class="fa fa-chevron-right" style="display: inline-block; height: 18px;"></i>
+                                    </button>
+                                    <input type="number" class="form-control validated-ctrl clear-ctrl" id="inputQuantity" name="quantity" step="1" min="0" aria-describedby="stdReportingUoM">
+                                    <span class="input-group-text" id="stdReportingUoM"> </span>
+                                </div>
+                                <small class="text-muted" id="stdReporting"></small>
+                            </div>
+                            <label for="inputNumberOfRods" class="col-sm-2 col-form-label hide1 hide2 show3">No. Rods or Bolos</label>
+                            <div class="col-sm-4">
+                                <input type="number" class="form-control hide1 hide2 show3 validated-ctrl clear-ctrl" id="inputNumberOfRods" name="numberOfRods" min="0" step="1">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <label for="inputContainerNo" class="col-sm-2 col-form-label hide3 show1 show2">Container No.</label>
+                            <label for="inputContainerNo" class="col-sm-2 col-form-label show3 hide1 hide2">Cart No.</label>
+                            <div class="col-sm-4">
+                                <input type="text" class="form-control validated-ctrl clear-ctrl" id="inputContainerNo" name="containerNo">
+                            </div>
+                            @*<label for="inputNumberOfBolos" class="col-sm-2 col-form-label hide1 hide2 show3">No. Bolos</label>
+                                <div class="col-sm-4">
+                                    <input type="number" class="form-control hide1 hide2 show3" id="inputNumberOfBolos" name="numberOfBolos">
+                                </div>*@
+                        </div>
+
+                        <div class="row">
+                            <button type="button" class="btn btn-primary float-end btn-lg " onclick="postForm();" id="postButton">
+                                <i class="gg-push-chevron-right-r" style="display:inline-block;margin-bottom:-4px;"></i>
+                                POST
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="ValidateItemModal" class="modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Item # for <span id="itemNoJob"></span>: &nbsp;<span id="itemNoItem"></span></h5>
+                <button type="button" class="btn btn-outline-dark" onclick="cancelItemValidation()" aria-label="Close">
+                    <i class="gg-close" style="display: inline-block; height: 18px;"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <label for="validateItemInput" class="col-sm-3 col-form-label">Item Number</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="ValidateItemInput" name="validateItemInput">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="cancelItemValidation()">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts{
+
+    <script type="text/javascript">
+        var currentJob = "";
+        var currentVersion = 0;
+        var ctrRequired = false;
+        var scanConfirmRequired = false;
+        var scanConfirmEveryScan = false;
+        var refreshJobView = false;
+        var currentItem = {
+            icc: "",
+            itemNumber: "",
+            qtyNeeded: 0,
+            qtyFinished: 0,
+            qtyRemaining: 0,
+            scanConfirmed: false
+        };
+        var standardQuantity = {
+            overagePercent: 0,
+            required: false,
+            quantity: 0,
+            max: 0
+        };
+
+        $(document).ready(() => {
+
+            $("#dateFilter").change((e) => {
+                loadJobs($("#dateFilter").val());
+            });
+
+            $(".validated-ctrl").change((e) => {
+                validateForm(false, e.currentTarget.id);
+            });
+
+            $("#ValidateItemInput").on("keydown", onItemValidationInputKeyDown);
+
+
+
+            loadJobs('@Model.ToString("yyyy-MM-dd")');
+
+        });
+
+        function loadJobs() {
+                    block();
+            var url = '@Url.Action("ProductionOrders")';
+            $.get(url, (r) => {
+                $("#jobList").html(r);
+
+            }).done(function (msg) { unblock(); })
+                .fail(function (xhr, status, error) {
+                    unblock();
+                });
+        }
+
+        function loadJobs(dateStr, selectedJob = '') {
+                    block();
+            var url = '@Url.Action("ProductionOrders")?date=' + dateStr;
+            $.get(url, (r) => {
+                $("#jobList").html(r);
+                if (selectedJob !== '') {
+                    console.log('loading ', selectedJob);
+                    refreshJobView = true;
+                    $(`table#jobTable > tbody > tr > td > button[data-job-id='${selectedJob}']`).click();
+
+                }
+
+            }).done(function (msg) {
+                $("#jobScanInput").on("keydown",    function (e) {
+                    /* ENTER PRESSED*/
+                    if (e.keyCode === 9 || e.keyCode === 13) {
+                        e.preventDefault();
+                        console.log(e.keyCode);
+                        var val = $("#jobScanInput").val();
+
+                        if (val !== currentJob)
+                            $(`table#jobTable > tbody > tr > td > button[data-job-id='${val.toUpperCase()}']`).click();
+                    }
+
+                });
+                unblock();
+
+            })
+                .fail(function (xhr, status, error) {
+                    toastr.error("There was an error retrieving the job list.");
+                    unblock();
+                });
+        }
+
+
+        function selectJob(jobNumber, itemNumber, qty, fin, uom, ver, cat, std, stdReq, stdQty, stdUom, reqCtr, wc, caption, remainingQty, validateItem, overagePercent, allowedOverwork, refresh = false) {
+            console.log(qty, fin, remainingQty, refresh, overagePercent, validateItem);
+            if (refreshJobView) {
+                refresh = true;
+                refreshJobView = false;
+            }
+
+            if (jobNumber === currentJob && !refresh) {
+                jobNumber = "";
+            }
+
+            ver = ver[1];
+            currentJob = jobNumber || "";
+            currentItem.itemNumber = itemNumber || "";
+            currentItem.qtyFinished = fin;
+            currentItem.qtyNeeded = qty;
+            currentItem.qtyRemaining = remainingQty;
+            currentItem.unitOfMeasure = uom;
+            currentItem.icc = cat;
+
+            ctrRequired = currentJob === "" ? false : reqCtr;
+            currentVersion = currentJob === "" ? 0 : parseInt(ver);
+            standardQuantity.required = stdReq === true || stdReq == "True";
+            standardQuantity.quantity = stdQty;
+            standardQuantity.overagePercent = overagePercent;
+            standardQuantity.max = stdQty * ((100.0 + overagePercent)/100.0) ;
+            scanConfirmRequired = validateItem;
+
+
+            if (!refresh) {
+                //preserve mixer
+                $("#mixerSelect").val(null);
+            }
+
+            $(".clear-ctrl").val(null);
+
+            if (currentJob && currentJob.trim().length > 0) {
+                // Job was selected.
+                scanConfirmEveryScan = $(`button[data-job-id=${jobNumber}]`).data("validate-every-output") === true;
+
+                $(`.hide${ver}`).removeClass("visually-hidden").addClass("visually-hidden");
+                $(`.show${ver}`).removeClass("visually-hidden");
+
+                if (!refresh) {
+
+                    loadMixers(wc, caption);
+                    currentItem.scanConfirmed = false;
+                } else {
+                    if ((caption || '').trim() === '') { // Hide the mixer if caption is null
+                        $(".mixer-ctrl").addClass("visually-hidden");
+
+                    }
+                }
+
+                $("#workFinished").text(fin);
+                $("#workUoM").text(uom);
+                $("#workRemaining").text(remainingQty);
+                var percentComplete = (fin / qty) * 100;
+
+                $("#workProgress").css("width", `${percentComplete}%`)
+
+                $("#workContainer").removeClass("visually-hidden");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-warning");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-success");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").addClass("btn-outline-success");
+
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}']`).removeClass("btn-outline-success");
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}']`).addClass("btn-outline-warning");
+
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}'] > i`).removeClass("fa-chevron-right");
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}'] > i`).addClass("fa-chevron-left");
+
+                $(`table#jobTable > tbody > tr[data-job-id]`).removeClass("visually-hidden");
+                $(`table#jobTable > tbody > tr[data-job-id]`).removeClass("selected");
+                $(`table#jobTable > tbody > tr[data-job-id!='${jobNumber}']`).addClass("visually-hidden");
+                $(`table#jobTable > tbody > tr[data-job-id='${jobNumber}']`).addClass("selected");
+                $("#dateFilter").attr("disabled", "disabled");
+
+                $("#stdReporting").text(std);
+                $("#stdReportingUoM").text(stdUom || uom);
+
+
+
+                if (currentVersion === 1 && standardQuantity.required === true) {
+                    setInputQtyToStdQty();
+                }
+
+                if (currentVersion === 2 && standardQuantity.required === true) {
+                    $("#inputQuantityBtn .button-text").text(parseFloat(standardQuantity.quantity).toFixed(2));
+                } else if (currentVersion === 2 && standardQuantity.required === false) {
+                    $(`#inputQuantityBtn`).removeClass("visually-hidden").addClass("visually-hidden");
+                }
+
+
+                if (standardQuantity.quantity > 0) {
+                    $("#inputQuantity").attr("max", standardQuantity.max);
+                } else {
+                    $("#inputQuantity").removeAttr("max");
+                }
+            } else {
+                validationClear();
+                $("#stdReporting").text("");
+                $("#stdReportingUoM").text("");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-success");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-warning");
+                $("table#jobTable > tbody > tr[data-job-id]").removeClass("visually-hidden");
+                $("table#jobTable > tbody > tr[data-job-id]").removeClass("selected");
+
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").addClass("btn-outline-success");
+                $(`table#jobTable > tbody > tr > td > button[data-job-id] > i`).addClass("fa-chevron-right");
+                $(`taUrlle#jobTable > tbody > tr > td > button[data-job-id] > i`).removeClass("fa-chevron-left");
+                $("#dateFilter").removeAttr("disabled");
+                $("#workContainer").addClass("visually-hidden");
+               loadJobs($("#dateFilter").val());
+            }
+        }
+
+        function setInputQtyToStdQty() {
+            $("#inputQuantity").val(standardQuantity.quantity);
+        }
+
+        function loadMixers(wc, caption) {
+
+            $('#mixerSelect')
+                .find('option')
+                .remove();
+
+            $("#mixerCaption").text(caption);
+
+            if ((caption || '').trim() === '') { // Hide the mixer if caption is null
+                $(".mixer-ctrl").addClass("visually-hidden");
+                return;
+            }
+
+
+            $.get('@Url.Action("MixerList")' + `?code=${wc}`, (r) => {
+                if ((r || []).length > 0) {
+                     $('#mixerSelect')
+                        .find('option')
+                        .remove()
+                        .end()
+                        .append(`<option selected value="0">Select a ${caption}</option>`)
+                        .val(0);
+
+                    r.forEach((o) => {
+                        $('#mixerSelect').append(`<option value="${o.name}">${o.name}</option>`);
+                    });
+                }
+            });
+        }
+
+        function validationFail(key) {
+            $(`#${key}`).removeClass("is-valid");
+            $(`#${key}`).addClass("is-invalid");
+        }
+
+        function validationPass(key) {
+            $(`#${key}`).addClass("is-valid");
+            $(`#${key}`).removeClass("is-invalid");
+
+        }
+
+        function validationClear() {
+            $(`.validated-ctrl`).removeClass("is-valid");
+            $(`.validated-ctrl`).removeClass("is-invalid");
+        }
+
+
+        function validateForm(suppressToasts, fieldOnly) {
+            // quantity
+            var errors = [];
+            var q = parseFloat($("#inputQuantity").val()).toFixed(2);
+
+            if (!fieldOnly || fieldOnly === "inputQuantity") {
+                if (!q || isNaN(q) || q <= 0) {
+                    errors.push("Quantity is required and must be greater than 0");
+                    validationFail("inputQuantity");
+                }
+                else if ( standardQuantity.quantity > 0.0 && q > standardQuantity.max) {
+                    errors.push(`Quantity cannot exceed ${standardQuantity.max}`);
+                    validationFail("inputQuantity");
+
+                } else {
+                    validationPass("inputQuantity");
+                }
+            }
+
+            if (ctrRequired === true && (!fieldOnly || fieldOnly === "inputContainerNo")) {
+                var ctrVal = $("#inputContainerNo").val() || "";
+                if (ctrVal.length === 0) {
+                    var label = currentVersion === 3 ? "Cart Id " : "Container No ";
+                    errors.push(label + "is required.");
+                    validationFail("inputContainerNo");
+                } else {
+                    validationPass("inputContainerNo");
+                }
+            }
+
+            //todo: container req'd logic
+
+            if (!fieldOnly || fieldOnly === "mixerSelect") {
+                var mixer = $("#mixerSelect").val();
+                if (!$("#mixerSelect").hasClass("visually-hidden")) {
+
+                    if (currentVersion === 2 && (mixer === "0" || mixer === 0 || !mixer)) {
+                        errors.push($("#mixerCaption").text() + " is required");
+                        validationFail("mixerSelect");
+                    } else {
+                        validationPass("mixerSelect");
+                    }
+                }
+            }
+
+            if (!fieldOnly || fieldOnly === "inputNumberOfRods") {
+                var bolos = parseFloat($("#inputNumberOfRods").val()).toFixed(2);
+                if (currentVersion === 3 && (bolos <= 0 || isNaN(bolos) || !bolos)) {
+                    errors.push("Rod or Bolos is required and must be greater than 0.");
+                    validationFail("inputNumberOfRods");
+                } else {
+                    validationPass("inputNumberOfRods");
+                }
+            }
+
+            if (!suppressToasts) {
+                errors.forEach((e) => toastr.error(e));
+            }
+            return errors.length === 0;
+        }
+
+        function postForm(bypassScanCheck) {
+
+            if (validateForm() === false)
+                return;
+
+
+            var model = {
+                JobNumber: currentJob, MixerLine: '', ContainerNo: $("#inputContainerNo").val(), Quantity: parseFloat($("#inputQuantity").val()).toFixed(2), BolosOrRods: 0, UseCartId: false };
+
+            switch (currentVersion) {
+                case 1:
+                    break;
+                case 2:
+                    model.MixerLine = $("#mixerSelect").val();
+                    break;
+                case 3:
+                    model.BolosOrRods = parseFloat($("#inputNumberOfRods").val()).toFixed(2);
+                    model.UseCartId = true;
+                    break;
+                case 0:
+                default:
+                    toastr.error("No Job selected");
+                    return;
+            }
+
+
+            if (scanConfirmRequired  && bypassScanCheck !== true) {
+                if (!currentItem.scanConfirmed || currentItem.qtyRemaining <= 0) {
+
+                    requestItemValidation();
+                    return;
+                }
+
+                var mq = model.Quantity;
+
+                if (currentItem.unitOfMeasure.toLowerCase() !== "LBS") {
+                    // convert quantity to UOM
+                    mq = mq / parseFloat(standardQuantity.quantity);
+                }
+
+                if (currentItem.qtyRemaining < mq) {
+
+                    requestItemValidation();
+                    return;
+                }
+
+            }
+
+
+            block();
+            var url = '@Url.Action("PostJob")';
+            $.post(url , model, (r) => {
+                if (r && r.success) {
+                    toastr.success(r.message);
+                    currentItem.postCount++;
+                    loadJobs($("#dateFilter").val(), model.JobNumber);
+                    validationClear();
+                } else {
+                    toastr.error(r.message);
+                }
+
+            }).done(function (msg) { unblock(); })
+                .fail(function (xhr, status, error) {
+                    toastr.error("There was an error posting to Just Foods.")
+                    unblock();
+                });
+        }
+
+        function requestItemValidation() {
+            $("#itemNoJob").text(currentJob);
+            $("#itemNoItem").text(currentItem.itemNumber);
+
+            $("#ValidateItemInput").val("");
+            $('#ValidateItemModal').modal('show');
+            $("#ValidateItemInput").focus();
+        }
+
+        function onItemValidationInputKeyDown(e) {
+            switch (e.keyCode) {
+                case 9:
+                case 13:
+                    e.preventDefault && e.preventDefault();
+                    validateItem($("#ValidateItemInput").val());
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        function validateItem(itemInput) {
+            console.log(itemInput, currentItem.itemNumber);
+
+            var itemNum = itemInput.toString().replace(/\t/g, '').split('\r\n')[0];
+
+            if (itemNum == currentItem.itemNumber || itemNum.indexOf(currentItem.itemNumber) >= 0) {
+                $('#ValidateItemModal').modal('hide');
+
+                currentItem.scanConfirmed = !scanConfirmEveryScan;
+                postForm(true);
+            } else {
+                var url = '@Url.Action("ValidateItemNo")';
+                $.post(url, { "JobItemNumber": currentItem.itemNumber, "ScannedItemNumber": itemNum, "ItemCategoryCode": currentItem.icc,  "IsValid": false }, (result) => {
+                    if (result && result.isValid === true) {
+                        $('#ValidateItemModal').modal('hide');
+                        currentItem.scanConfirmed = !scanConfirmEveryScan;
+                        postForm(true);
+                    } else {
+                        toastr.error("Item number entered does not match item on job.")
+                    }
+
+                }).fail(function (xhr, status, error) {
+                    toastr.error("There was an error reading to Just Foods.")
+                    unblock();
+                });
+            }
+        }
+
+        function cancelItemValidation() {
+            $('#ValidateItemModal').modal('hide');
+        }
+
+        function block() {
+            topbar.show();
+            $(".validated-ctrl").attr("disabled", "disabled");
+            $("#postButton").attr("disabled", "disabled");
+            $(".btn-job-toggle").attr("disabled", "disabled");
+        }
+
+        function unblock() {
+            topbar.hide();
+            $("#spinner").addClass("visually-hidden");
+            $(".validated-ctrl").removeAttr("disabled", "disabled");
+            $("#postButton").removeAttr("disabled", "disabled");
+            $(".btn-job-toggle").removeAttr("disabled", "disabled");
+        }
+
+        function updateOrder(jobNo) {
+            var url = '@Url.Action("ProductionOrder")?orderNo=' + jobNo;
+            $.post(url , [], (r) => {
+                console.log(r);
+                if (r && r.success) {
+                    console.log(r.result);
+                    selectJob(r.result.jobNumber, r.result.itemNumber, parseFloat(r.result.quantity).tofixed(2), parseFloat(r.result.finishedQuantity).toFixed(2),
+                        r.result.unitOfMeasure, r.result.screenType, r.result.itemCategory,
+                        r.result.showStandardReporting ? `Std Reporting Qty: ${parseFloat(r.result.standardReportingQty).toFixed(2)} ${r.result.standardReportingUoM}` : "",
+                        r.result.showStandardReporting,
+                        r.result.standardReportingQty,
+                        r.result.standardReportingUoM,
+                        r.result.cartOrContainerRequired ? true : false,
+                        r.result.workCenter,
+                        r.result.resourceCaption,
+                        parseFloat(r.result.remainingQuantity).toFixed(2),
+                        r.result.enableItemValidation,
+                        true);
+
+                } else {
+                    toastr.error(r.message);
+                }
+
+            }).done(function (msg) { unblock(); })
+                .fail(function (xhr, status, error) {
+                    toastr.error("There was an error reading to Just Foods.")
+                    unblock();
+                });
+        }
+
+    </script>
+
+} 

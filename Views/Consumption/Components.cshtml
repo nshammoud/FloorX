@@ -1,0 +1,307 @@
+﻿@model IEnumerable<KQF.Floor.Web.Models.ProductionOrderComponent>
+@{
+    Layout = "";
+    var isLocked = Model.Any(x => x.IsLocked);
+    var allTransactions = Model.SelectMany(m => m.Transactions).ToArray();
+    // don't delete the lone unposted transaction or we lose context of the RunID
+    var blockTxDelete = allTransactions.Any(t => t.IsPosted) && allTransactions.Count(y => !y.IsPosted && !y.IsWaste) == 1;
+
+}
+
+
+@if (isLocked)
+{
+
+    <tr>
+        <td colspan="3" class="bg-light">
+            <div class="alert alert-danger">
+                <p>The current Job/Mixer is Locked do to a dump/scrap operation and must be completed by a Supervisor.</p>
+                @if (User.HasRole("supervisor", ViewData["CurrentLocation"] as string))
+                {
+                    <p>You can delete the errant transaction row below to remove this lock or flag all transactions as scrap and post to Just Foods.</p>
+                    <button onclick="postJob(true);" class="btn btn-danger">Post as Scrap</button>
+                    <button onclick="undoLock();" class="btn btn-light">Undo Lock</button>
+                }
+            </div>
+        </td>
+    </tr>
+
+}
+
+@foreach (var component in Model.OrderBy(x => x.IsConsumable ? 0 : 1).ThenBy(x => x.ItemCategory).ThenBy(x => x.ItemNo))
+{
+    if (component.IsConsumable)
+    {
+
+        var hasLock = component.Transactions.Any(x => x.IsLocked);
+
+        <tr class="item-parent-row @(!hasLock? "": "border border-danger")" data-itemno-authorized="@component.IsAuthorized"
+            data-consumable="true"
+            data-consolidated="@component.IsConsolidated.ToString().ToLower()"
+            data-rework-only="@component.ReworkOnly.ToString().ToLower()"
+            data-itemno="@component.ItemNo" data-itemdesc="@component.Description" data-is-scrap="@(component.Transactions.Any(t=> t.IsWaste))"
+            data-valid-post="@((component.IsStatusValid ?? false) && !isLocked)"
+            data-substitueItemNos='@(Newtonsoft.Json.JsonConvert.SerializeObject(component.Substituions.ToArray()))'>
+            <td>
+                <div class="flex-row border-bottom border-primary">
+                    <div class="fcol-3">
+                        @if (component.IsAuthorized)
+                        {
+                            <i class="mr-1 fa fa-unlock text-success"></i>
+                        }
+                        else
+                        {
+                            <i class="mr-1 fa fa-lock text-danger"></i>
+                        }
+
+                        <strong> @component.ItemNo</strong>
+                    </div>
+                    <div class="fcol-1">@String.Format("{0:.00}", component.QuantityPerUnit)</div>
+                    <div class="fcol-1">@component.UoM</div>
+                    <div class="fcol-1">
+                        @(component.Transactions.Where(x => !x.IsWaste).Select(x=> x.Quantity).DefaultIfEmpty(0).Sum() )
+                    </div>
+                </div>
+                <div class="small">
+                    @component.Description -
+                    @component.ItemCategory
+                </div>
+
+            </td>
+            <th colspan="1" style="background-color:#fff;">
+
+                @{
+                    var pendingQuantities = component.Transactions.Where(x => !x.IsWaste).Select(x => x.Quantity).DefaultIfEmpty(0m).Sum(x => x);
+                    var completed = Convert.ToInt32(((component.ExpectedQuantity - component.RemainingQuantity + component.MovedQuantity) / (component.ExpectedQuantity == 0 ? -1 : component.ExpectedQuantity)) * 100m);
+                    var pending = component.ExpectedQuantity == 0 ? 0 : Convert.ToInt32(((pendingQuantities) / component.ExpectedQuantity) * 100m);
+
+                }
+                <div class="row mb-1">
+                    <div class="col-sm-12">
+                        <div class="mb-1 small">
+                            <div class="flex-row">
+                                <div class="fcol-1">
+                                    <span class="badge bg-primary"> @String.Format("{0} {1}", component.ExpectedQuantity - component.RemainingQuantity + component.MovedQuantity, component.UoM)  </span>
+                                </div>
+                                <div class="fcol-1">
+                                    <span class="badge bg-info">  @String.Format("{0} {1}", pendingQuantities, component.UoM) </span>
+                                </div>
+                                <div class="fcol-1">
+                                    <span class="badge text-dark" style="background-color:#cacaca;">
+                                        @String.Format("{0:n0} {1}", component.ExpectedQuantity, component.UoM)
+                                    </span>
+                                </div>
+                                <div class="float-end">
+                                    @String.Format("{0}%", completed + pending)
+                                </div>
+                            </div>
+
+
+
+
+                        </div>
+                        <div class="progress" style="height: 9px; background-color:#cacaca;">
+                            <div class="progress-bar progress-bar-striped bg-primary" role="progressbar" style="width: @String.Format("{0}%", completed)" aria-valuenow="@String.Format("{0}", completed)"
+                                 aria-valuemin="0" aria-valuemax="100"></div>
+                            <div class="progress-bar  bg-info" role="progressbar" style="width: @String.Format("{0}%", pending)" aria-valuenow="@String.Format("{0}", pending)"
+                                 aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                    </div>
+                </div>
+            </th>
+            <td>
+                <div style="display: flex; align-items:center;  ">
+                    <div style="flex:1;">
+                        @if (component.Transactions.Any(x => x.IsWaste))
+                        {
+                            <span class="badge bg-warning">Sc</span>
+                        }
+                        else if (component.IsStatusValid == null)
+                        {
+                            <span class="badge bg-dark">@component.NumberOfUnits</span>
+                        }
+                        else if (component.IsStatusValid == true)
+                        {
+                            <span class="badge bg-success">@component.NumberOfUnits</span>
+                        }
+
+                        else
+                        {
+                            <span class="badge bg-danger">@component.NumberOfUnits</span>
+                        }
+                    </div>
+                    <div style="flex:1;" class="ml-1;">
+                        <button @(component.Transactions.Count > 0 ? "" : "disabled") class="btn btn-light" onclick="expandTransactions('@component.ItemNo');" style="min-height:36px;">
+                            <i class="fa fa-chevron-circle-down @(hasLock? "visually-hidden": "")" data-itemno="@component.ItemNo"></i>
+                            <i class="fa fa-chevron-circle-up @(!hasLock? "visually-hidden": "")" data-itemno="@component.ItemNo"></i>
+                        </button>
+
+                      
+
+                        </div>
+
+                </div>
+
+
+
+
+
+            </td>
+        </tr>
+
+
+        <tr class="@(!hasLock? "visually-hidden": "border border-danger") transaction-row" data-itemno="@component.ItemNo">
+            <td colspan="3" class="p-2 border-1" style="font-size:12px;">
+                <table class="table table-striped table-responsive">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Item #</th>
+                            <th>Desc</th>
+                            <th>Ctr #</th>
+                            <th>Lot #</th>
+                            <th>Created</th>
+                            <th>Quantity</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in component.Transactions)
+                        {
+                            <tr class="tx-row" data-id="@t.Id" data-container-no="@t.ContainerNumber?.ToUpper()" data-is-scrap="@t.IsWaste">
+                                <td>
+
+                                    @if (t.ReworkOverAllocatedQty > 0)
+                                    {
+
+                                        <i class="text-danger fa fa-warning" data-bs-toggle="tooltip" data-bs-placement="right" title="Substitute item exceeds rework maximum by @(String.Format("{0:.00}{1}", t.ReworkOverAllocatedQty, component.UoM))"></i>
+                                    }
+
+                                    @if (t.IsLocked)
+                                    {
+
+                                        <i class="text-danger fa fa-lock" style="font-size:1.2rem;"></i>
+                                        <i class="text-danger fa fa-exclamation" style="font-size:1.2rem;"></i>
+                                    }
+
+                                </td>
+                                <td>
+
+                                    @if (t.IsWaste)
+                                    {
+                                        <span style="text-decoration:line-through">
+                                            @t.ItemNumber
+                                        </span>
+                                        <span class="badge bg-warning">SCRAP</span>
+                                    }
+                                    else if (t.IsPosted)
+                                    {
+
+                                        @t.ItemNumber
+
+                                        <span class="badge bg-danger">POSTED</span>
+                                    }
+                                    else
+                                    {
+                                        @t.ItemNumber
+                                    }
+
+                                    @if (t.ReworkOverAllocatedQty > 0)
+                                    {
+                                        <div>
+                                            <small class="text-danger"> Substitute item exceeds rework maximum by @(String.Format("{0:.00}{1}", t.ReworkOverAllocatedQty, component.UoM))"</small>
+                                        </div>
+                                    }
+
+                                </td>
+                                <td>@t.ItemDescription</td>
+                                <td>@t.ContainerNumber</td>
+                                <td>@t.LotNumber</td>
+                                <td>@t.DateCreated.ToString("MM/dd/yyyy HH:mm")</td>
+                                <td>
+                                    @t.Quantity
+                                    <!-- @t.UserEnteredQuantity -->
+                                </td>
+                                <td>
+                                    @if (User.HasRole("administrator", ViewData["CurrentLocation"] as string))
+                                    {
+                                        <div class="dropdown">
+                                          <a class="btn btn-secondary dropdown-toggle" href="#" role="button" id="adminMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                                           <i class="fa fa-cog"></i>
+                                          </a>
+
+                                          <ul class="dropdown-menu" aria-labelledby="adminMenuLink">
+                                            <li><a class="dropdown-item" href="#" onclick="forceDeleteTx(@t.Id);return false;">Manual Delete</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="toggleWaste(@t.Id);return false;">Toggle Waste</a></li>
+                                            <li><a class="dropdown-item" href="#" onclick="togglePosted(@t.Id);return false;">Toggle Posted</a></li>
+                                          </ul>
+                                        </div>
+                                    }else if (!t.IsPosted && ((t.UserId == User.UserName() && !isLocked) || User.HasRole("supervisor", ViewData["CurrentLocation"] as string)))
+                                    {
+                                        if (!t.IsWaste && !blockTxDelete)
+                                        {
+                                            <button class="btn btn-sm btn-danger" onclick="removeTx(this);" data-step="1" data-txid="@t.Id">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        }
+                                        else if (!t.IsWaste && blockTxDelete)
+                                        {
+                                            <button class="btn btn-sm btn-danger" onclick="toastr.error('Please add the corrected item to the mix before removing this one and try again.');">
+                                                <i class="fa fa-trash"></i>
+                                            </button>
+                                        }
+                                        else if (User.HasRole("supervisor", ViewData["CurrentLocation"] as string))
+                                        {
+                                            @*<button class="btn btn-sm btn-outline-danger" onclick="unwasteTx(@t.Id);">
+                                                    <i class="fa fa-undo"></i>
+                                                </button>*@
+                                        }    
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </td>
+        </tr>
+
+    }
+    else   // NOT CONSUMABLE
+    {
+        <tr class="item-parent-row"
+            data-consumable="false"
+            style="font-size:smaller;" data-itemno="@component.ItemNo" data-itemdesc="@component.Description" data-substitueItemNos='@(Newtonsoft.Json.JsonConvert.SerializeObject(component.Substituions.ToArray()))'>
+            <td>
+                <div class="flex-row border-bottom border-dark">
+                    <div class="fcol-3">
+                        <i class="mr-1 fa fa-ban "></i>
+                        @component.ItemNo
+                    </div>
+
+                    <div class="fcol-1">
+                        @String.Format("{0:.00}", @component.QuantityPerUnit)
+                    </div>
+                    <div class="fcol-1">
+                        @component.UoM
+                    </div>
+                    <div class="fcol-1">&nbsp;</div>
+                </div>
+                <div class="small">
+                    @component.Description -
+                    @component.ItemCategory
+                </div>
+
+
+            </td>
+
+
+            <th>
+            </th>
+
+            <th>
+            </th>
+        </tr>
+    }
+
+}

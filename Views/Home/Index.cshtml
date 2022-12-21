@@ -1,0 +1,62 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+    var flags = ViewData["EnabledFlags"] as string[] ?? new string[] { };
+}
+
+
+<div class=" mt-5">
+    <div class="row ">
+        <div class="col-sm-6 col-md-4 col-lg-2 mb-3 d-none d-md-inline-block">
+            <a href="@Url.Action("Index", "Consumption")" class="btn btn-lg btn-success text-center w-100 h-100 pt-5 pb-5">
+                <i class="gg-arrow-bottom-right-r" style="margin: 20px auto; --ggs:3;"></i>
+                Inputs
+            </a>
+        </div>
+
+        <div class="col-sm-6 col-md-4 col-lg-2 mb-3 d-none d-md-inline-block ">
+            <a href="@Url.Action("Index", "Output")" class="btn btn-lg btn-primary text-center w-100 h-100 pt-5 pb-5">
+                <i class="gg-arrow-top-right-r" style="margin: 20px auto; --ggs:3;"></i>
+                Outputs
+            </a>
+        </div>
+        <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
+            <a href="@Url.Action("Index", "Lookup")" class="btn btn-lg btn-secondary text-center w-100 h-100 pt-5 pb-5">
+                <i class="gg-search-found" style="margin: 20px auto; --ggs:3;"></i>
+                Lookups
+            </a>
+        </div>
+        @if (flags.Contains("material-mgmt"))
+        {
+            <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
+                <a href="@Url.Action("Index", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">             
+                <i class="gg-dice-2" style="margin: 20px auto; --ggs:3;"></i>
+               Thermal Processing
+            </a>
+        </div>
+        }
+
+       @* @if (flags.Contains("material-mgmt"))
+        {
+            <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
+                <a href="@Url.Action("Doubling", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">
+                <div class=" badge bg-light text-dark dashboard-button-overlay">Material Management</div>
+                <i class="gg-dice-2" style="margin: 20px auto; --ggs:3;"></i>
+                Doubling
+            </a>
+        </div>
+        }
+
+        @if (flags.Contains("material-mgmt"))
+        {
+            <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
+
+            <a href="@Url.Action("Container", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">
+                <div class=" badge bg-light text-dark dashboard-button-overlay">Material Management</div>
+                <i class="gg-ratio" style="margin: 20px auto; --ggs:3;"></i>
+                Cart/Ctr to Bin
+            </a>
+        </div>
+        }*@
+
+    </div>
+</div>

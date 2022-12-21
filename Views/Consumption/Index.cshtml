@@ -1,0 +1,1408 @@
+﻿@model System.DateTime
+
+
+<div class="row mt-2">
+    <div class="col-sm-12">
+        <div class="card  box-shadow">
+            <h6 class="card-header">
+                Consumption Journal
+                @if (User.HasRole("supervisor", ViewData["CurrentLocation"] as string))
+                {
+                    <input type="date" value="@Model.ToString("yyyy-MM-dd")" id="dateFilter" class="form-control d-inline-block" style="max-width:200px;" />
+                }
+
+                <code class="float-end mt-1" style="font-size:13px;">
+                    <ul class="list-inline">
+                        <li class="list-inline-item">[@ViewData["CurrentLocation"]</li>
+                        <li class="list-inline-item">
+
+                            <span class="current-time">
+                                @DateTime.Now.ToString("MM/dd/yyyy HH:mm")
+                            </span>
+
+                            ]
+                        </li>
+
+
+                        <li class="list-inline-item">
+                            @Context.Connection.RemoteIpAddress.ToString()
+                            @*@System.Net.Dns.GetHostEntry(Context.Connection.RemoteIpAddress).HostName.Split(".", StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()*@
+                        </li>
+                        <li class="list-inline-item text-decoration-underline">
+                            @User.UserName()
+                        </li>
+
+
+                    </ul>
+                </code>
+            </h6>
+            <div class="card-body">
+                <div class="row">
+
+                    <div class="col-sm-12" id="jobList">
+
+
+
+
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="workContainer" class="visually-hidden mt-2">
+    <div class="col-sm-12">
+        <div class="card box-shadow bg-light">
+            <div class="card-body">
+
+
+                <div class="row mb-0 p-0" style="margin-bottom: -32px !important; margin-left: 12px; z-index: 5; position: absolute; width: 95%; ">
+                    <div class="col-sm-10 p-0">
+                        <h5>
+                            <span class="mixer-caption">Mixer/Line/Grinder</span>:&nbsp;
+                            <span id="mixerName" class="text-decoration-underline">None Selected</span>
+                            <button class="btn btn-primary btn-sm" onclick="loadMixers();">
+                                <i class="fa fa-chevron-right"></i>
+                            </button>
+                        </h5>
+                    </div>
+                    <div class="col-sm-2">
+                        <div class="d-flex align-items-center comp-job visually-hidden" id="componentsLoading">
+                            <div class="spinner-border ms-auto text-info" role="status" aria-hidden="true"></div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="row" id="componentsTableContainer" style="margin-top:10px;">
+
+                    <div class="p-3">
+                        <div class="alert alert-info comp-job visually-hidden">
+                            Loading Components....
+                        </div>
+                        <table class="table table-responsive table-striped comp-job" id="componentsTable">
+                            <thead>
+                                <tr>
+                                    @*<th>Item #</th>
+                                        <th>Descriptions</th>
+                                        <th>Qty Pr</th>
+                                        <th>UoM</th>
+                                        <th>Amount</th>*@
+
+                                    <td class="" style="width:55%;">
+                                        <div class="flex-row fw-bold">
+                                            <div class="fcol-3">Item #</div>
+
+                                            <div class="fcol-1">Qty Pr</div>
+                                            <div class="fcol-1">UoM</div>
+                                            <div class="fcol-1">Amount</div>
+                                        </div>
+                                    </td>
+                                    <th colspan="1">
+                                        <div class="flex-row">
+                                            <div class="fcol-1">
+                                                <span class="badge bg-primary"> Posted </span>
+                                            </div>
+                                            <div class="fcol-1">
+                                                <span class="badge bg-info"> Added </span>
+                                            </div>
+                                            <div class="fcol-1">
+                                                <span class="badge text-dark" style="background-color:#cacaca;">
+                                                    Expected
+                                                </span>
+                                            </div>
+                                            <div class="float-end">
+                                                %%
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th colspan="1" style="width:80px;">Status</th>
+
+                                </tr>
+                            </thead>
+                            <tbody id="componentTableBody">
+                                <!-- ROWS -->
+                                <tr>
+                                    <td colspan="8">
+                                        <div class="alert alert-info">
+                                            No components to display. Select a Job.
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="row" style="margin-bottom:-32px;">
+                    <div class="col-sm-4 offset-sm-8" style="z-index:1000;">
+                        @{
+                            var canPost = !User.HasRole("Consumption.DenyPost", ViewData["CurrentLocation"] as string);
+                        }
+                        <button id="btnPost" class="btn btn-lg btn-primary w-100 hide-scrap" @(canPost ? "" : "disabled") data-can-post="@(canPost ? 1:0)" onclick="postJob();">
+                            Post <i class="fa fa-arrow-right"></i>
+                        </button>
+
+                        @if (canPost && !User.HasRole("supervisor", ViewData["CurrentLocation"] as string))
+                        {
+                            canPost = false;
+                        }
+
+                        <button id="btnUndoScrap" class="visually-hidden btn btn-outline-danger show-scrap" @(canPost ? "" : "disabled") data-can-post="@(canPost ? 1:0)" onclick="unwasteTx(-1);">Undo Scrap <i class="fa fa-undo"></i></button>
+                        <button id="btnPostScrap" class="btn btn-danger visually-hidden show-scrap" @(canPost ? "" : "disabled") data-can-post="@(canPost ? 1:0)" onclick="postJob();">
+                            Post Scrap <i class="fa fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="row">
+
+                    <ul class="nav nav-tabs" style="padding-left: 1rem !important;">
+                        <li class="nav-item">
+                            <button class="nav-link active" id="ctr-tab" data-bs-toggle="tab" data-bs-target="#ctr" type="button" role="tab" aria-controls="ctr" aria-selected="true">Consume by Container</button>
+
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" id="item-tab" data-bs-toggle="tab" data-bs-target="#item" type="button" role="tab" aria-controls="item" aria-selected="false">Consume by Item #</button>
+
+                        </li>
+                    </ul>
+
+
+                    <div class="tab-content bg-light" id="myTabContent">
+                        <div class="tab-pane fade show active" id="ctr" role="tabpanel" aria-labelledby="ctr-tab">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Consume by Container Number</h6>
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <div class="input-group">
+
+                                                <input type="text" class="form-control" id="inputContainerNumber" name="containerNumber" aria-describedby="" placeholder="Container Number">
+                                                <button type="button" id="inputContainerNumberBtn" class="btn btn-primary" onclick="validateContainer();">
+                                                    <span class="button-text"></span>
+                                                    <i class="gg-search" style=""></i>
+                                                </button>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-sm-4">
+                                            <label for="ctrItemNo" class="col-form-label">Item #</label>
+                                            <input type="text" readonly class="form-control" id="ctrItemNo" name="ctrItemNo">
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label for="ctrLotNo" class="col-form-label">Lot #</label>
+                                            <input type="text" readonly class="form-control" id="ctrLotNo" name="ctrLotNo">
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <label for="ctrQty" class="col-form-label">Qty</label>
+                                            <div class="input-group">
+
+
+                                                <input type="number" class="form-control" id="ctrQty" name="ctrQty" disabled min="0" max="1">
+                                                <button type="button" id="ctrQtyUnlockBtn" class="btn btn-primary" onclick="unlockCtrQuantity();" tabindex="-1">
+                                                    <span class="button-text"></span>
+                                                    <i class="gg-pen" style=""></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-2 d-flex align-items-end justify-content-end">
+                                            <button class="btn btn-primary mt-2" id="btnCtrAdd" disabled="disabled" onclick="addFromContainer();">
+                                                Add
+                                            </button>
+                                            <button class="btn btn-danger mt-2" style="margin-left:13px;" id="btnCtrReset" onclick="resetContainerForm();">
+                                                Reset
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer text-muted">
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="item" role="tabpanel" aria-labelledby="item-tab">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-title">Consume by Item Number</h6>
+
+
+                                    <div class="row">
+                                        <div class="col-sm-4">
+                                            <label for="itmItemNo" class="col-form-label">Item #</label>
+                                            <input type="text" class="form-control col-sm-12" id="itmItemNo" name="itmItemNo">
+                                            <div class="spinner-border text-primary visually-hidden" id="itmItmNoWait" style=" float: right; margin-top: -34px; margin-right: 2px;" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <label for="itmLotNo" class="col-form-label">Lot #</label>
+                                            <input type="text" readonly class="form-control col-sm-12" id="itmLotNo" name="itemLotNo">
+
+                                            @*<select class="form-control" disabled id="itmLotNo" name="itemLotNo">
+                                                </select>*@
+                                        </div>
+                                        <div class="col-sm-2">
+                                            <label for="itmQty" class="col-form-label">Qty</label>
+                                            <input type="number" class="form-control" disabled id="itmQty" name="itmQty" min="0" max="1">
+                                        </div>
+
+                                        <div class="col-sm-2 d-flex align-items-end justify-content-end">
+                                            <button class="btn btn-primary mt-2" id="btnItmAdd" disabled="disabled" onclick="addFromItem();">
+                                                Add
+                                            </button>
+                                            <button class="btn btn-danger mt-2" style="margin-left:13px;" id="btnItmReset" onclick="resetItemForm();">
+                                                Reset
+                                            </button>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="mixerModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="mixerModalTitle" aria-hidden="true">>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mixerModalTitle">Select <span class="mixer-caption">Mixer</span></h5>
+            </div>
+            <div class="modal-body">
+                <div class="list-group" id="mixerList">
+                </div>
+            </div>
+            <div class="modal-footer">
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="txDeleteAlert">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"> Delete Transaction </h5>
+            </div>
+            <div class="modal-body">
+                Have the contents of this item been dumped or physically added to the batch?
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary remove-tx" data-txid="0" data-step="2" onclick="removeTx(this);">Yes</button>
+                <button class="btn btn-outline-primary remove-tx" data-txid="0" data-step="3" onclick="removeTx(this);">No</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="txDeleteConfirmDumped">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete Transaction </h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    Warning: Removing this transaction after it has been dumped will require additional reconciliation in Just Foods.
+                    If it has been dumped, use the <strong>SCRAP</strong> Option.
+                </div>
+
+                @if ((ViewData["IsSupervisor"] as bool?) == true)
+                {
+
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <button class="btn btn-danger remove-tx" data-txid="0" data-step="4" onclick="removeTx(this);">Remove Transaction</button>
+                        </div>
+                        <div class="offset-sm-2  col-sm-4">
+                            <button class="btn btn-warning remove-tx" data-txid="0" data-step="4" onclick="wasteTx(this);">Scrap Contents</button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="offset-sm-1  col-sm-3">
+                        <button class="btn btn-warning remove-tx" data-txid="0" data-step="4" onclick="wasteTx(this, true);">Scrap Contents</button>
+                    </div>
+
+
+                }
+            </div>
+            <div class="modal-footer">
+
+                <button class="btn btn-outline-primary" onclick="removeTx(this);" data-txid="0" data-step="0">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="txDeleteConfirm">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete Transaction </h5>
+            </div>
+            <div class="modal-body">
+
+                <div class="alert alert-danger">Warning: Do not remove this transaction after it has been dumped! Doing so will require additional reconciliation in Just Foods and is only permitted by a supervisor.</div>
+                <div>
+                    <button class="btn btn-danger remove-tx" data-txid="0" data-step="4" onclick="removeTx(this);">Remove Transaction</button>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+
+                <button class="btn btn-outline-primary" onclick="removeTx(this);" data-txid="0" data-step="0">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" tabindex="-1" id="txAddScapConfirm">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Add as Scrap </h5>
+            </div>
+            <div class="modal-body">
+
+                Adding additional contents will be automatically flagged as SCRAP.
+
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="addFn();">Continue</button>
+                <button class="btn btn-outline-primary" onclick='cancelScrap();'>Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Head{
+    <link rel="stylesheet" href="~/lib/EasyAutocomplete-1.3.5/easy-autocomplete.css" />
+}
+@section Scripts{
+    <script src="~/lib/signalr/dist/browser/signalr.js"></script>
+    <!-- script was modified to accept tab/enter to complete list selection, don't use the .min version unless you update it-->
+    <script src="~/lib/EasyAutocomplete-1.3.5/jquery.easy-autocomplete.js"></script>
+
+
+    <script type="text/javascript">
+        var currentUser = '@User.UserName()';
+        var refreshJobView = false;
+
+        var currentJob = {
+            jobNumber: "",
+            itemNumber: "",
+            caption: "",
+            workcenter: "",
+            mixer: "",
+            mixers: [],
+            isOpen: false,
+            isScrap: false,
+            reworkOnly: false,
+            allowOverReportConsumption: true,
+            startDate: ""
+        };
+
+
+        var standardQuantity = {
+            required: false,
+            quantity: 0
+        };
+
+        var itemNumbers = [];
+
+        var itemNumberOptions = {
+            data: [],
+            getValue: "name",
+            adjustWidth: false,
+            template: {
+                type: "description",
+                fields: {
+                    description: "description"
+                }
+            },
+            list: {
+                onChooseEvent: function (a, b) {
+                    console.log(a, b);
+                    var value = $("#itmItemNo").getSelectedItemData();
+
+                    //$(`#itmItemNo`).removeClass("is-valid");
+                    //$(`#itmItemNo`).removeClass("is-invalid");
+                    //if (value === -1 || !value) {
+                    //    $("#itmItemNo").addClass("is-invalid");
+                    //} else {
+                    //    $("#itmItemNo").addClass("is-valid");
+                    //}
+                    if (value && value !== -1) {
+                        loadLotNumbers(value.name);
+                    } else {
+                        validateItemForm();
+                    }
+                },
+                match: {
+                    enabled: true
+                }
+            },
+            //theme: "plate-dark"
+        };
+
+         function initSignarlHub() {
+            connection = new signalR.HubConnectionBuilder().withUrl("/consumptionhub").build();
+
+            connection.on("JobUpdateNotification", function (user, jobNumber, mixer) {
+
+                console.log('Rx Job Update', user, currentUser, currentJob.jobNumber, mixer, currentJob.mixer);
+
+                if (user.toLowerCase().trim() !== currentUser.trim()
+                    && currentJob.jobNumber.toLowerCase().trim() === jobNumber.toLowerCase().trim()
+                    && mixer.toLowerCase().trim() === currentJob.mixer.toLowerCase().trim()) {
+                    toastr.info(`${user} updated ${jobNumber} on ${mixer}. Refreshing components...`);
+                    loadComponents();
+                }
+            });
+
+            connection.on("JobPostedNotification", function (user, jobNumber, mixer) {
+                console.log('Rx Job Posted', user, currentUser, currentJob.jobNumber, mixer, currentJob.mixer);
+
+                if (user.toLowerCase().trim() !== currentUser.trim()
+                    && currentJob.jobNumber.toLowerCase().trim() === jobNumber.toLowerCase().trim()
+                    && mixer.toLowerCase().trim() === currentJob.mixer.toLowerCase().trim()) {
+                    toastr.info(`${user} posted to ${jobNumber} on ${mixer}. Refreshing components...`);
+                    loadComponents();
+                }
+            });
+
+
+
+            connection.start().then(function () {
+               // document.getElementById("sendButton").disabled = false;
+            }).catch(function (err) {
+                return console.error(err.toString());
+            });
+
+
+        }
+
+        $(document).ready(() => {
+
+            initSignarlHub();
+
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+
+            $("#dateFilter").change((e) => {
+                loadJobs($("#dateFilter").val());
+            });
+
+            $("#itmLotNo").change((e) => {
+                selectLotFromItem();
+                validateItemForm();
+            });
+
+            $("#itmQty").keyup((e) => {
+                validateItemForm();
+            });
+
+            $("#itmItemNo").keydown((e) => {
+                if (e.keyCode === 9  ) {
+                    e.preventDefault();
+                }
+            });
+
+            $("#inputContainerNumber").keydown((e) => {
+                if (e.keyCode === 9 || e.keyCode === 13) {
+                    //Tab or enter (barcode)
+
+                    validateContainer();
+                }
+
+            });
+
+            loadJobs('@Model.ToString("yyyy-MM-dd")');
+        });
+
+        function removeTx(btn) {
+
+            var id = $(btn).data('txid');
+            var step = $(btn).data('step');
+            $(".remove-tx").data('txid', id);
+
+            console.log(btn, id, step);
+            switch (step) {
+                case 1: $("#txDeleteAlert").modal('show');
+                    break;
+                case 2:
+                    $("#txDeleteConfirm").modal('hide');
+                    $("#txDeleteAlert").modal('hide');
+                    $("#txDeleteConfirmDumped").modal('hide');
+                    $("#txDeleteConfirmDumped").modal('show');
+                    break;
+                case 3:
+                    $("#txDeleteConfirm").modal('hide');
+                    $("#txDeleteAlert").modal('hide');
+                    $("#txDeleteConfirmDumped").modal('hide');
+                    $("#txDeleteConfirm").modal('show');
+                    break;
+                case 4: //delete it
+                    var url = '@Url.Action("DeleteTx")';
+                    $.post(url, { id }, (result) => {
+
+                        if (result && result.result === true) {
+                            toastr.success("Transaction Deleted");
+                            loadComponents();
+                        } else {
+                            toastr.error("There was an error deleting this transaction");
+                            console.error(result.exception);
+                        }
+
+                    }).always(() => {
+                        $("#txDeleteConfirm").modal('hide');
+                        $("#txDeleteAlert").modal('hide');
+                        $("#txDeleteConfirmDumped").modal('hide');
+                        $(".remove-tx").data('txid', 0);
+                    });
+                    break;
+                default:
+                    $("#txDeleteConfirm").modal('hide');
+                    $("#txDeleteAlert").modal('hide');
+                    $("#txDeleteConfirmDumped").modal('hide');
+                    $(".remove-tx").data('txid', 0);
+                    break;
+            }
+        }
+
+         function wasteTx(btn, lockOnly = false) {
+
+            var id = $(btn).data('txid');
+            var step = $(btn).data('step');
+            $(".remove-tx").data('txid', id);
+
+
+             if (lockOnly === true) {
+                  var url = '@Url.Action("LockTx")';
+                $.post(url, { id,undo: false }, (result) => {
+
+                    if (result && result.result === true) {
+                        toastr.success("Transaction Flagged as Scrap");
+                        loadComponents();
+                    } else {
+                        toastr.error("There was an error scrapping this transaction");
+                        console.error(result.exception);
+                    }
+
+                }).always(() => {
+                    $("#txDeleteConfirm").modal('hide');
+                    $("#txDeleteAlert").modal('hide');
+                    $("#txDeleteConfirmDumped").modal('hide');
+                    $(".remove-tx").data('txid', 0);
+                });
+             } else {
+                var url = '@Url.Action("WasteTx")';
+                $.post(url, { id,undo: false }, (result) => {
+
+                    if (result && result.result === true) {
+                        toastr.success("Transaction Flagged as Scrap");
+                        loadComponents();
+                    } else {
+                        toastr.error("There was an error scrapping this transaction");
+                        console.error(result.exception);
+                    }
+
+                }).always(() => {
+                    $("#txDeleteConfirm").modal('hide');
+                    $("#txDeleteAlert").modal('hide');
+                    $("#txDeleteConfirmDumped").modal('hide');
+                    $(".remove-tx").data('txid', 0);
+                });
+             }
+        }
+
+         function unwasteTx(id) {
+             if (id === -1 && currentJob.isScrap) {
+                 //kind of a hack, just need any txid from the job
+                 if ($("tr.tx-row[data-is-scrap='True']").length > 0) {
+                     id = parseInt($($("tr.tx-row[data-is-scrap='True']")[0]).data("id"));
+                 }
+             }
+
+            var url = '@Url.Action("WasteTx")';
+            $.post(url, { id,undo: true }, (result) => {
+
+                if (result && result.result === true) {
+                    toastr.success("Transaction Reset");
+                    loadComponents();
+                } else {
+                    toastr.error("There was an error resetting this transaction");
+                    console.error(result.exception);
+                }
+
+            }).always(() => {
+
+            });
+        }
+
+        function updateScrap(isScrap) {
+            if (isScrap === true) {
+                currentJob.isScrap = isScrap;
+                $(".hide-scrap").removeClass("visually-hidden");
+                $(".show-scrap").removeClass("visually-hidden");
+                $(".hide-scrap").addClass("visually-hidden");
+
+            } else {
+                currentJob.isScrap = isScrap;
+                $(".hide-scrap").removeClass("visually-hidden");
+                $(".show-scrap").removeClass("visually-hidden");
+                $(".show-scrap").addClass("visually-hidden");
+            }
+        }
+
+        function getDataUrl() {
+            console.log($("#inputItemNumberAutoComplete").val());
+            var t = $("#inputItemNumberAutoComplete").val();
+            var url = `@Url.Action("ItemNumbers")?t=${t}`;
+            return url;
+        }
+
+        function loadJobs() {
+                    block();
+            var url = '@Url.Action("ProductionOrders")';
+            $.get(url, (r) => {
+                $("#jobList").html(r);
+
+            }).done(function (msg) { unblock(); })
+                .fail(function (xhr, status, error) {
+                    unblock();
+                });
+        }
+
+        function loadJobs(dateStr, selectedJob = '') {
+                    block();
+            var url = '@Url.Action("ProductionOrders")?date=' + dateStr;
+            $.get(url, (r) => {
+                $("#jobList").html(r);
+                if (selectedJob !== '') {
+                    refreshJobView = true;
+                    $(`table#jobTable > tbody > tr > td > button[data-job-id='${selectedJob}']`).click();
+                }
+
+            }).done(function (msg) {
+                $("#jobScanInput").on("keydown", function (e) {
+                    /* ENTER PRESSED*/
+                    if (e.keyCode === 9 || e.keyCode === 13) {
+                        e.preventDefault();
+                        console.log(e.keyCode);
+                        var val = $("#jobScanInput").val();
+
+                        if (val !== currentJob)
+                            $(`table#jobTable > tbody > tr > td > button[data-job-id='${val.toUpperCase()}']`).click();
+                    }
+
+                });
+                unblock();
+            })
+                .fail(function (xhr, status, error) {
+                    toastr.error("There was an error retrieving the job list.");
+                    unblock();
+                });
+        }
+
+        function block() {
+            topbar.show();
+            $(".validated-ctrl").attr("disabled", "disabled");
+            $("#postButton").attr("disabled", "disabled");
+            $(".btn-job-toggle").attr("disabled", "disabled");
+        }
+
+        function unblock() {
+            topbar.hide();
+            $("#spinner").addClass("visually-hidden");
+            $(".validated-ctrl").removeAttr("disabled", "disabled");
+            $("#postButton").removeAttr("disabled", "disabled");
+            $(".btn-job-toggle").removeAttr("disabled", "disabled");
+        }
+
+        function selectJob(jobNumber, itemNumber, qty, fin, uom, ver, cat, std, stdReq, stdQty, stdUom, reqCtr, wc, caption, remainingQty, validateItem, overagePercent, allowOverReportConsumption, refresh = false) {
+            if (refreshJobView === true) {
+                refresh = true;
+            }
+            console.log('sj aorc', allowOverReportConsumption);
+
+            if (this.currentJob.jobNumber !== jobNumber || currentJob.isOpen === false || refresh === true) {
+
+                //get the start date
+                this.currentJob.startDate = $(`button[data-job-id=${jobNumber}]`).data("job-date");
+                console.log("=> start date =>", this.currentJob.startDate);
+                resetItemForm();
+                resetContainerForm();
+                $("#componentTableBody").html("");
+                this.currentJob.jobNumber = jobNumber;
+                this.currentJob.itemNo = itemNumber;
+                this.currentJob.workcenter = wc;
+                this.currentJob.caption = (caption || "").trim().length === 0 ? "Mixer/Line/Grinder" : caption.trim();
+                if (!refresh) {
+                    this.currentJob.mixer = "";
+                    this.currentJob.mixers = [];
+                }
+                this.currentJob.isOpen = true;
+                this.currentJob.allowOverReportConsumption = allowOverReportConsumption;
+
+                $("#dateFilter").attr("disabled", "disabled");
+                $("#workContainer").removeClass("visually-hidden");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-warning");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-success");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").addClass("btn-outline-success");
+
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}']`).removeClass("btn-outline-success");
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}']`).addClass("btn-outline-warning");
+
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}'] > i`).removeClass("fa-chevron-right");
+                $(`table#jobTable > tbody > tr > td > button[data-job-id='${jobNumber}'] > i`).addClass("fa-chevron-left");
+
+                $(`table#jobTable > tbody > tr[data-job-id]`).removeClass("visually-hidden");
+                $(`table#jobTable > tbody > tr[data-job-id]`).removeClass("selected");
+                $(`table#jobTable > tbody > tr[data-job-id!='${jobNumber}']`).addClass("visually-hidden");
+                $(`table#jobTable > tbody > tr[data-job-id='${jobNumber}']`).addClass("selected");
+
+                loadMixers();
+                //loadComponents();
+                refreshJobView = false;
+                $("#inputContainerNumber").focus();
+            }
+            else {
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-success");
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").removeClass("btn-outline-warning");
+                $("table#jobTable > tbody > tr[data-job-id]").removeClass("visually-hidden");
+                $("table#jobTable > tbody > tr[data-job-id]").removeClass("selected");
+
+                $("table#jobTable > tbody > tr > td > button[data-job-id]").addClass("btn-outline-success");
+                $(`table#jobTable > tbody > tr > td > button[data-job-id] > i`).addClass("fa-chevron-right");
+                $(`table#jobTable > tbody > tr > td > button[data-job-id] > i`).removeClass("fa-chevron-left");
+                $("#dateFilter").removeAttr("disabled");
+                $("#workContainer").addClass("visually-hidden");
+                $("#componentTableBody").html("");
+                this.currentJob.isOpen = false;
+                this.currentJob.allowOverReportConsumption = true;
+
+                loadJobs($("#dateFilter").val());
+
+            }
+        }
+
+        function loadComponents() {
+            $(".comp-job").toggleClass("visually-hidden");
+            $.get(`@Url.Action("Components")?orderNumber=${currentJob.jobNumber}&line=${currentJob.mixer}&allowOverReportConsumption=${currentJob.allowOverReportConsumption}`, (result) => {
+                    $("#componentTableBody").html(result);
+
+                    itemNumberOptions.data = [];
+                    // loaUrl item# typeahead
+                    if ($("tr.item-parent-row[data-is-scrap='True']").length > 0) {
+                        updateScrap( true);
+                    } else {
+                        updateScrap(false);
+                    }
+
+                    if ($("tr.item-parent-row[data-rework-only='true']").length > 0) {
+                        currentJob.reworkOnly = true;
+                    } else {
+                        currentJob.reworkOnly = false;
+                    }
+
+                    $("tr.item-parent-row[data-itemno]").each((i, e) => {
+                        var itemNo = $(e).data('itemno');
+                        var authorized = $(e).data("itemno-authorized") === "True";
+                        var desc = $(e).data('itemdesc');
+                        var subs = $(e).data('substitueitemnos') || [];
+                        if (authorized) {
+                            if (currentJob.reworkOnly === false) {
+                                itemNumberOptions.data.push({ name: itemNo, description: desc });
+                            }
+                            subs.forEach((v, a, i) => {
+
+                                if (currentJob.reworkOnly === false || v.ReworkPercentage > 0)
+                                    itemNumberOptions.data.push({
+                                        name: v.SubstituteItemNo, description: `${v.Description}: Sub For ${v.ItemNo}`
+                                    });
+                            });
+                        }
+                    });
+
+                    $("#itmItemNo").easyAutocomplete(itemNumberOptions);
+
+
+
+                }).always(() => {
+                    $(".comp-job").toggleClass("visually-hidden");
+
+                    validateJobForPost();
+                }).fail(() => {
+                    toastr.error("Could not load components list");
+                });
+        }
+
+        function validateJobForPost() {
+        @if (User.HasRole("Consumption.DenyPost", ViewData["CurrentLocation"] as string))
+        {
+            <text>
+                $("#btnPost").attr("disabled", "disabled");
+            return false;
+            </text>
+        }else
+        {
+            <text>
+
+            if (currentJob.isScrap && @(User.HasRole("supervisor", ViewData["CurrentLocation"] as string).ToString().ToLower())) {
+                return true;
+            } else if (currentJob.isScrap) {
+                return false;
+            }
+
+            var validForPost = true;
+            $("tr.item-parent-row[data-valid-post]").each((i, e) => {
+                var isValid = $(e).data('valid-post').toLowerCase() === "true";
+                if (!isValid) {
+                    validForPost = false;
+                }
+            });
+
+            if (validForPost) {
+                $("#btnPost").removeAttr("disabled");
+            } else {
+                $("#btnPost").attr("disabled", "disabled");
+            }
+
+            return validForPost;
+
+            </text>
+        }
+
+
+
+        }
+
+        function resetSameJob() {
+            var mixer = currentJob.mixer;
+            var job = currentJob.jobNumber;
+            loadJobs($("#dateFilter").val(), job);
+           // $//("#mixerModal").modal("hide");
+            //selectMixer(mixer);
+        }
+
+        function postJob(wasteAll = false) {
+             @if (User.HasRole("Consumption.DenyPost", ViewData["CurrentLocation"] as string))
+            {
+                 <text> return; </text>
+            } else {
+                <text>
+                if (validateJobForPost()) {
+                    $("#btnPost").attr("disabled", "disabled");
+
+                    var url = '@Url.Action("PostJob")';
+                    $.post(url, { Line: currentJob.mixer, OrderNumber: currentJob.jobNumber, ForceAllToWaste: wasteAll, JobStartDate: this.currentJob.startDate }, (r) => {
+                        console.log(r);
+                        if (r && r.success === true) {
+
+                            toastr.success(r.message);
+                            resetSameJob();
+                        } else {
+                            var msg = r.message;
+
+                            if (r.exception) {
+                                msg += '\r\n' + r.exception;
+                            }
+                            toastr.error(msg);
+                            $("#btnPost").removeAttr("disabled" );
+                        }
+                      });
+                 }
+
+                </text>
+            }
+
+        }
+
+        function loadMixers() {
+            var refresh = refreshJobView;
+
+             $(".mixer-caption").text(currentJob.caption);
+            $("#mixerName").text("None Selected");
+
+            if (currentJob.workcenter !== "" && (currentJob.mixers || []).length > 0) {
+                if (refresh === false) {
+                    $("#mixerModal").modal("show");
+                    console.log("modal1");
+                } else {
+                    console.log(this.currentJob.mixer);
+                    selectMixer(this.currentJob.mixer);
+                }
+             } else {
+
+                 $.get('@Url.Action("MixerList")' + `?code=${currentJob.workcenter}`, (r) => {
+
+                     if ((r || []).length > 0) {
+                         $("#mixerList").html("");
+                         r.forEach((o) => {
+                             currentJob.mixers.push(o.name);
+                             console.log(o, currentJob.jobNumber);
+                             var disabled = o.productionOrderNumber === '' || o.productionOrderNumber === currentJob.jobNumber ? "" : "disabled";
+                             var css = o.productionOrderNumber === '' || o.productionOrderNumber === currentJob.jobNumber ? "" : "text-strike";
+                             $('#mixerList').append(`<button type="button" class="list-group-item list-group-item-action ${css}" ${disabled} onclick="selectMixer('${o.name}');"> ${o.name}</button>`);
+                         });
+                         if (refresh === false) {
+                             $("#mixerModal").modal("show");
+                             console.log("modal 2");
+                         } else {
+                             console.log(this.currentJob.mixer);
+                             selectMixer(this.currentJob.mixer);
+                         }
+                     } else {
+                          
+                         toastr.error(`There is no mixer/line/grinder configured for work center ${currentJob.workcenter}`);
+                     }
+                 });
+             }
+
+        }
+
+        function selectMixer(name) {
+            currentJob.mixer = name;
+            $("#mixerName").text(name);
+            $("#mixerModal").modal("hide");
+            loadComponents();
+            $("#inputContainerNumber").focus();
+
+        }
+
+        function expandTransactions(itemNo) {
+
+
+            $(`i[data-itemno='${itemNo}']`).toggleClass("visually-hidden");
+
+
+            $(`tr.transaction-row[data-itemno!='${itemNo}']`).addClass("visually-hidden");
+            $(`tr.transaction-row[data-itemno='${itemNo}']`).toggleClass("visually-hidden");
+        }
+
+
+
+        var addFn = addFromContainer;
+
+        function addFromContainer() {
+
+            $("#btnCtrAdd").removeAttr("disabled");
+            $("#btnCtrAdd").attr("disabled", "disabled");
+
+            if (currentJob.isScrap) {
+                addFn = addFromContainerPost;
+                $("#txAddScapConfirm").modal('show');
+            }
+            else {
+                addFromContainerPost();
+            }
+        }
+
+
+        function addFromContainerPost() {
+            cancelScrap();
+
+            var model = {
+                JobNumber: currentJob.jobNumber,
+                ContainerNumber: $("#inputContainerNumber").val(),
+                ItemNumber: $("#ctrItemNo").val(),
+                LotNumber: $("#ctrLotNo").val(),
+                Quantity: parseFloat($("#ctrQty").val()),
+                MixerId: currentJob.mixer
+            };
+
+            //dont add if container is already in job
+
+
+            $.post('@Url.Action("AddTx")', model, (r) => {
+                loadComponents();
+            }).always(() => { resetContainerForm(true); });
+        }
+
+        function cancelScrap() {
+            $("#btnItmAdd").removeAttr("disabled");
+            $("#btnItmAdd").attr("disabled", "disabled");
+
+            $("#btnCtrAdd").removeAttr("disabled");
+            $("#btnCtrAdd").attr("disabled", "disabled");
+
+            $("#txAddScapConfirm").modal('hide');
+        }
+
+        function addFromItem() {
+            $("#btnItmAdd").removeAttr("disabled");
+            $("#btnItmAdd").attr("disabled", "disabled");
+
+
+            if (currentJob.isScrap) {
+                addFn = addFromItemPost;
+                $("#txAddScapConfirm").modal('show');
+            } else {
+                addFromItemPost();
+            }
+        }
+
+        function addFromItemPost() {
+            cancelScrap();
+
+            if (validateItemForm()) {
+
+
+             var model = {
+                JobNumber: currentJob.jobNumber,
+                ContainerNumber: "",
+                 ItemNumber: $("#itmItemNo").val(),
+                 LotNumber: $("#itmLotNo").val(),
+                 Quantity: $("#itmQty").val(),
+                 MixerId: currentJob.mixer
+             };
+
+                $.post('@Url.Action("AddTx")', model, (r) => {
+                    if (r && r.success) {
+                        loadComponents();
+                    } else {
+                        toastr.error(r.message);
+                        console.log(r.exception);
+                    }
+                }).always(() => { resetItemForm(); });
+            }
+        }
+
+        function validateContainer() {
+            var url = '@Url.Action("ValidateContainer")';
+            var containerNo = $("#inputContainerNumber").val().trim();
+
+            if ((containerNo || "").length > 0) {
+                if ($(`tr.tx-row[data-container-no='${containerNo.toUpperCase()}']`).length > 0) {
+                    toastr.error(`Cannot use container ${containerNo} more than once.`)
+                    return;
+                }
+            }
+
+            if (containerNo.length > 0) {
+
+                $.post(url, { containerNo }, (result) => {
+
+                    if (result.valid === true) {
+                        var itemRow = $(`tr.item-parent-row[data-itemno='${result.itemNo}']`);
+
+                        // CHECK Substituion
+                        if (itemRow.length === 0) {
+                            itemRow = $(`tr.item-parent-row[data-substitueitemnos*='\"SubstituteItemNo\":\"${result.itemNo}\"']`);
+                            console.log("checking substitue rows", itemRow);
+                        }
+
+
+                        if (itemRow.length === 0) {
+                            toastr.error(`Item ${result.itemNo} is not valid for this job.`);
+                            resetContainerForm();
+                            return;
+                        }
+
+                        var authorized = `${itemRow.data('itemno-authorized') || 'False'}`;
+                        console.log(itemRow.data('itemno-authorized'), authorized);
+                        if (authorized.toLowerCase() !== "true") {
+                            toastr.error(`User is not authorized to add item ${result.itemNo} to this job.`);
+                            resetContainerForm();
+                            return;
+                        }
+
+                        if (!allowAddBasedOnRework(result.itemNo)){
+                            resetContainerForm();
+                            return;
+                        }
+
+
+                        $("#ctrItemNo").val(result.itemNo);
+                        $("#ctrLotNo").val(result.lotNo);
+                        $("#ctrQty").val(parseFloat(result.quantity).toFixed(2));
+                        $("#ctrQty").attr("max", parseFloat(result.quantity).toFixed(2));
+                        $("#btnCtrAdd").removeAttr("disabled");
+                    } else {
+                        toastr.error(result.message);
+                        resetContainerForm(false);
+                    }
+                });
+            }
+        }
+
+        function allowAddBasedOnRework(itemNo) {
+            if (currentJob.reworkOnly === false)
+                return true;
+            var status = false;
+
+            $("tr.item-parent-row[data-consolidated='true']").each((i, e) => {
+                var no = $(e).data('itemno');
+                var subs = $(e).data('substitueitemnos') || [];
+
+                if (no === itemNo) {
+                    return false; // has to be a substitue
+                }
+
+                subs.forEach((v, a, i) => {
+                    if (v.ReworkPercentage > 0 && v.SubstituteItemNo === itemNo)
+                        status = true;
+                });
+            });
+
+            if (!status) {
+                toastr.error("You may only add rework to a job that is over-consumed");
+            }
+
+            return status;
+
+        }
+
+        function unlockCtrQuantity() {
+            var max = parseFloat($("#ctrQty").attr("max"));
+            toastr.warning(`The maximum consumable quantity is ${max.toFixed(2)}`);
+            $("#ctrQty").removeAttr("disabled");
+        }
+
+        function resetContainerForm(clearContainerNo = true) {
+            if (clearContainerNo) {
+                $("#inputContainerNumber").val("");
+            }
+
+            $("#ctrItemNo").val('');
+            $("#ctrLotNo").val('');
+            $("#ctrQty").val('');
+            $("#ctrQty").attr("max", 1);
+            $("#ctrQty").attr("disabled", "disabled");
+            $("#btnCtrAdd").attr("disabled", "disabled");
+        }
+
+        function loadLotNumbers(itemNo) {
+            console.log('loadltenumbersnew');
+            $("#itmItemNo").attr("disabled", "disabled");
+            $("#itmItemNo").removeClass("is-valid");
+            $("#itmItemNo").removeClass("is-invalid");
+
+            $("#itmLotNo").val("");
+            $("#itmLotNo").removeAttr("readonly");
+
+            validateItemForm();
+            $("#itmLotNo").focus();
+
+        }
+
+        function OLD_loadLotNumbers(itemNo) {
+            var url = '@Url.Action("ValidateLotNumber")';
+            $("#itmItmNoWait").removeClass("visually-hidden");
+            $("#itmItemNo").attr("disabled", "disabled");
+            $("#itmItemNo").removeClass("is-valid");
+            $("#itmItemNo").removeClass("is-invalid");
+
+            $.post(url, { itemNo }, (result) => {
+
+                if (result && result.length > 0) {
+                    if (result[0].success) {
+                        $("#itmLotNo").html("<option value=''>Select a lot</option>");
+                        $("#itmLotNo").removeAttr("disabled");
+
+                        var s = result.length === 1 ? "selected " : ""
+                        result.forEach((v, i, a) => {
+                            $("#itmLotNo").append(`<option class='itmOpt' ${s}value='${v.lotNumber}' data-qty='${v.quantity}'>${v.lotNumber}</option>`);
+
+                        });
+
+                        if (result.length === 1) {
+                            selectLotFromItem();
+                        }
+                        $("#itmLotNo").focus();
+                        validateItemForm();
+
+                    } else {
+                        console.log(result[0].exception);
+                        toastr.error(result[0].message);
+                    }
+                } else {
+                    //todo: no results
+                    toastr.warning("No lots available at this location");
+                    resetItemForm(true);
+                    $("#itmItemNo").removeClass("is-valid");
+                    $("#itmItemNo").removeClass("is-invalid");
+                    $("#itmItemNo").addClass("is-invalid");
+                    $("#itmItmNoWait").addClass("visually-hidden");
+                    $("#itmItemNo").removeAttr("disabled");
+                }
+            }).always(() => { $("#itmItmNoWait").addClass("visually-hidden"); });
+        }
+
+        function selectLotFromItem() {
+            var val = $("#itmLotNo").val();
+            if (val && val !== "") {
+                $(`#itmLotNo`).addClass("is-valid");
+                //var qty = $(`option.itmOpt[value='${val}']`).data("qty");
+                $("#itmQty").removeAttr("disabled");
+                $("#itmQty").focus();
+               // $("#itmQty").attr("max", parseFloat(qty));
+            }
+        }
+
+        function validateItemForm() {
+            var itemNumber = $("#itmItemNo").val();
+            var validForPost = false;
+            $("#btnItmAdd").attr("disabled", "disabled");
+
+            $("#itmItemNo").removeClass("is-invalid");
+            $("#itmItemNo").removeClass("is-valid");
+
+            if (!$("#itmItemNo").val() || itemNumberOptions.data.findIndex(x => x.name === $("#itmItemNo").val()) < 0) {
+                $("#itmItemNo").addClass("is-invalid");
+                return false;
+            } else {
+
+                $("#itmItemNo").addClass("is-valid");
+            }
+
+            $("#itmLotNo").removeClass("is-invalid");
+            $("#itmLotNo").removeClass("is-valid");
+
+            if ($("#itmLotNo").val() === "" || !$("#itmLotNo").val()) {
+                $("#itmLotNo").addClass("is-invalid");
+                return false;
+            }
+            else {
+                $("#itmLotNo").addClass("is-valid");
+            }
+
+            $("#itmQty").removeClass("is-invalid");
+            $("#itmQty").removeClass("is-valid");
+
+            if ($("#itmQty").val() !== "") {
+                var max =  @Html.Raw(ViewData["MaxItemConsumptionQty"].ToString()) ;    //5001.0 ;//parseFloat($("#itmQty").attr("max"));
+                var val = parseFloat($("#itmQty").val());
+
+                if (val <= max) {
+                    $("#itmQty").addClass("is-valid");
+                } else {
+                    $("#itmQty").addClass("is-invalid");
+                    toastr.error(`Cannot add more than ${max}`);
+                    return false;
+                }
+            } else {
+                $("#itmQty").addClass("is-invalid");
+                return false;
+            }
+
+            if (!allowAddBasedOnRework(itemNumber)){
+
+                return;
+            }
+
+            $("#btnItmAdd").removeAttr("disabled");
+            return true;
+
+        }
+
+        function resetItemForm(ignoreItem = false) {
+            $("#itmItmNoWait").removeClass("visually-hidden");
+            $("#itmItmNoWait").addClass("visually-hidden");
+            $("#itmItemNo").removeAttr("disabled");
+
+            $("#itmLotNo").val("");
+            $("#itmLotNo").removeClass("is-valid");
+            $("#itmLotNo").removeClass("is-invalid");
+            $("#itmLotNo").attr("readonly", "readonly");
+
+            $("#itmQty").val("");
+            $("#itmQty").removeClass("is-valid");
+            $("#itmQty").removeClass("is-invalid");
+            $("#itmQty").attr("disabled", "disabled");
+
+            if (!ignoreItem) {
+                $("#itmItemNo").val("");
+                $("#itmItemNo").removeClass("is-valid");
+                $("#itmItemNo").removeClass("is-invalid");
+            }
+
+
+            $("#btnItmAdd").attr("disabled", "disabled");
+        }
+
+        @if(User.HasRole("administrator", ViewData["CurrentLocation"] as String)){
+            <text>
+                 function toggleWaste(id) {                    
+                    var url = '@Url.Action("ToggleWastedFlag")';
+                    $.post(url, { "txId": id}, (r) => {
+                        if (r && r.success) {
+                            toastr.success( r.currentVal ? "Transaction set to Waste" : "Transaction removed from Waste");
+                            loadComponents();
+                        } else {
+                            toastr.error("Could not change Wasted Flag");
+                            //console.log(r.exception);
+                        }
+                    });
+                }
+
+                function togglePosted(id) {                    
+                    var url = '@Url.Action("TogglePostedFlag")';
+                    $.post(url, { "txId": id}, (r) => {
+                        if (r && r.success) {
+                            toastr.success( r.currentVal ? "Transaction set to Posted" : "Transaction removed from Posted");
+                            loadComponents();
+                        } else {
+                            toastr.error("Could not change Posted Flag");
+                            //console.log(r.exception);
+                        }
+                    });
+                }
+
+                function forceDeleteTx(id) {                    
+                    var url = '@Url.Action("ForceDeleteTx")';
+                    if(confirm("Are you sure you want to delete this?")){
+                        $.post(url, { "txId": id}, (r) => {
+                            if (r && r.success) {
+                                toastr.success( r.currentVal ? "Transaction set to Waste" : "Transaction removed from Waste");
+                                loadComponents();
+                            } else {
+                                toastr.error("Could not change Wasted Flag");
+                                //console.log(r.exception);
+                            }
+                        });
+                    }
+                }
+                     
+            </text>
+             
+        }
+
+
+        function undoLock() {
+            var job = currentJob.jobNumber;
+            if (job) {
+                var url = '@Url.Action("Unlock")';
+                $.post(url, { "job": job }, (r) => {
+                    if (r && r.success) {
+                        toastr.success("Job Unlocked");
+                        loadComponents();
+                    } else {
+                        toastr.error(r.message);
+                        console.log(r.exception);
+                    }
+                });
+
+            }
+        }
+    </script>
+
+}

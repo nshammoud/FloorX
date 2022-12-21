@@ -1,0 +1,330 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=@ViewData["ViewportWidth"], initial-scale=@ViewData["ViewportScale"]" />
+    <title>@ViewData["Title"] - @ViewData["AppDisplayName"]</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/css-gg/icons/all.css" />
+    <link rel="stylesheet" href="~/lib/font-awesome/css/font-awesome.min.css" />
+    <link rel="stylesheet" href="~/lib/toastr/toastr.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" />
+
+    @await RenderSectionAsync("Head", required: false)
+
+</head>
+<body>
+    <header>
+        @{
+            var headerClass = "navbar-dark bg-dark";
+            var headerTextClass = "text-light";
+            var currentLocation = ViewData["CurrentLocation"] as String;
+            var flags = ViewData["EnabledFlags"] as string[] ?? new string[] { };
+
+            if (!String.IsNullOrEmpty(currentLocation))
+            {
+                if (currentLocation.ToLower() == "leonard")
+                {
+                    headerClass = "navbar-light bg-info";
+                    headerTextClass = "text-light";
+                }
+                else if (currentLocation.ToLower() == "quincy")
+                {
+                    headerClass = "navbar-light bg-success";
+                    headerTextClass = "text-light";
+                }
+            }
+        }
+
+        <nav class="navbar navbar-expand-md @headerClass" aria-label="KQF Floor">
+            <div class="container-fluid">
+                <a class="navbar-brand " href="/">
+                  <i class="gg-home-alt d-inline-block"></i>  @ViewData["AppDisplayName"]
+                </a>
+                @if (User.Identity.IsAuthenticated)
+                {
+
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarsExample06" aria-controls="navbarsExample06" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarsExample06">
+                        <ul class="navbar-nav me-auto mb-xl-0">
+                            <li class="nav-item dropdown mr-3">
+                                <a class="nav-link dropdown-toggle" href="#" id="dropdown06" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="gg-chevron-double-right d-inline"></i> @(String.IsNullOrEmpty(currentLocation) ? "Location" : currentLocation)
+                                </a>
+                                <ul class="dropdown-menu" aria-labelledby="dropdown06">
+                                    @foreach (var l in ((ViewData["Locations"] as string[]) ?? new string[] { }))
+                                    {
+                                        <li>
+                                            <a class="dropdown-item" href="@Url.Action("SwitchTo", "Account", new
+                                                        {
+                                                            location = l,
+                                                            redirect = Context.Request.Path + Context.Request.QueryString
+                                                        })">@l</a>
+                                                        </li>
+                                                    }
+
+
+                                </ul>
+                            </li>
+                            <li></li>
+                            <li class="nav-item pl-5">
+                                <a class="nav-link ml-5" aria-current="page" href="/">Dashboard</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link " aria-current="page" href="@Url.Action("Index", "Consumption")">Inputs</a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link " aria-current="page" href="@Url.Action("Index", "Output")">Outputs</a>
+                            </li>
+                             <li class="nav-item">
+                                <a class="nav-link " aria-current="page" href="@Url.Action("Index", "Lookup")">Lookup</a>
+                            </li>
+                            @if (flags.Contains("material-mgmt"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link " aria-current="page" href="@Url.Action("Index", "MaterialManagement")">Thermal Processing</a>
+                                </li>
+                            }
+
+                        </ul>
+
+
+                        @if (Context.User?.Identity?.IsAuthenticated == true)
+                        {
+                            <div class=" float-end @headerTextClass " style="margin-right:5px; ">
+                               
+                                <div class="dropdown dropstart">
+                                  <button class="btn btn-sm btn-light dropdown-toggle p-1 mr-5"   type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                    @User.Claims.FirstOrDefault(x => x.Type == System.Security.Claims.ClaimTypes.Name).Value
+                                  </button>
+                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+    
+                                    <li><a class="dropdown-item" href="#" onclick="printerModal.show();return false;">Printer: <span id="currentPrinter">@ViewData["CurrentPrinter"]</span> &nbsp;<i class="fa fa-edit"></i></a></li>
+                                    <li><hr /></li>
+
+                                @if (User.HasRole("administrator", ViewData["CurrentLocation"] as string))
+                                {
+                                     <li><a class="dropdown-item" href="#" onclick="clearEoDCache( );return false;">End Of Day: 
+                                         <span id="EoD">@ViewData["EoD"]</span>s &nbsp;<i class="fa fa-refresh"></i></a></li>                                  
+                                  
+                                }
+
+                                    <li> <a class="dropdown-item" aria-current="page" href="@Url.Action("Logout", "Account")"> Sign out <i class="gg-log-out float-end"></i></a></li>
+                                  </ul>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <a class="nav-link float-end" aria-current="page" href="@Url.Action("Login", "Account")">Login</a>
+                        }
+
+
+                    </div>
+                }
+            </div>
+        </nav>
+
+    </header>
+    <div class="container">
+        <main role="main" class="pb-3">
+            @RenderBody()
+        </main>
+    </div>
+
+
+    <div class="modal fade" id="jfHistoryModal"
+         data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel">Job History for <span id="curJobHistory"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <table class="table table-responsive table-striped" style="font-size:0.8rem;">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th>Lot</th>
+                                <th>ICC</th>
+                                <th>Qty</th>
+                                <th>Container</th>
+                                <th>Created</th>
+                                <th>User</th>
+
+                            </tr>
+                        </thead>
+                        <tbody id="jfHistoryBody">
+                        </tbody>
+                    </table>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+      <div class="modal fade" id="changePrinterModal"
+         data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel1" aria-hidden="true">
+        <div class="modal-dialog modal-md">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="staticBackdropLabel1">Change Label Printer</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                   
+                    @{
+                        var printers = ( ViewData["Printers"] as string[]) ?? new string[0];
+                        var currentPrinter = ViewData["CurrentPrinter"] as string ?? "";
+                    }
+                    @if(printers.Length == 0)
+                    {
+                        <h5 class="alert alert-warning">There are no printers to choose from. Contact you administrator.</h5>
+                    }else
+                    {
+                        <p>Select one...</p>
+                       <div class="list-group">
+                        @foreach(var p in printers)
+                        {
+                                if(p.ToLower() == currentPrinter.ToLower())
+                                {
+                                    <button type="button" data-change-printer="@p.Replace("\\", "_")" class="list-group-item list-group-item-action active" aria-current="true">
+                                        @p
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" data-change-printer="@p.Replace("\\", "_")" class="list-group-item list-group-item-action">@p</button>
+                                }
+                                 
+                        }
+                        </div> 
+                    }
+
+                    
+                       
+
+                     
+                  
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <footer class="border-top footer text-muted">
+        <div class="container">
+            &copy; 2021 - KQF.Floor.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+
+           
+        </div>
+    </footer>
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/popper.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/lib/toastr/toastr.min.js"></script>
+    <script src="~/js/topbar.js"></script>
+    <script src="~/js/site.js"></script>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+    <script type="text/javascript">
+        var jfModal = new bootstrap.Modal(document.getElementById('jfHistoryModal'), {});
+        var printerModal = new bootstrap.Modal(document.getElementById('changePrinterModal'), {});
+
+        $(document).ready(() => {
+            setInterval(() => {
+                var m = new Date();
+                var dateString =
+                    ("0" + (m.getMonth() + 1)).slice(-2) + "/" +
+                    ("0" + m.getDate()).slice(-2) + "/" +
+                    m.getFullYear() + " " +
+                    ("0" + m.getHours()).slice(-2) + ":" +
+                    ("0" + m.getMinutes()).slice(-2);
+
+                $(".current-time").text(dateString);
+
+            }, 20000);//1 min
+
+            if($("input.initial-focus").lenght === 1 ){
+                $("input.initial-focus").focus();
+            }
+
+            $("button[data-change-printer]").click( (e)=> {
+                var url = '@Url.Action("ChangePrinter", "Account")';
+                
+                var p = $(e.currentTarget).data("change-printer");
+                var pesc = p.replaceAll("_", "\\");
+                printerModal.hide();
+
+                $.post( url, {printer: pesc}, (r)=> {
+                    if(r && r.success){
+                        toastr.success("Printer changed to " + pesc);
+                        $("#currentPrinter").text(pesc);
+                        $("button[data-change-printer]").removeClass("active");
+                        $(`button[data-change-printer=${p}]`).addClass("active");
+                    }else {
+                        toastr.error("Could not change printer. An error occurred.");
+                    }                
+                }).then( ()=> {printerModal.hide();});
+            });
+            
+        });
+     
+   
+        function clearEoDCache(){
+            $.post( '@Url.Action("ClearEoD", "Home")', { }, (r)=>{
+                toastr.info("EoD Offset is " +  r + "s");
+                $("#EoD").text(r);
+            })
+        }
+        
+
+        function showJFHistoryModal(jobNo, source) {
+            $("#jfHistoryBody").html("");
+            $("#curJobHistory").text(`${jobNo} - ${source}`);
+
+            var url = '@Url.Action("JobHistory", "Lookup")';
+            $.post(url, { jobNo: jobNo, source: source }, (result) => {
+                console.log(result);
+                if ((result || []).length > 0) {
+                    //add rowsconso
+                    (result || []).forEach((v) => {
+                        var cd = "";
+                        if (v.createDateTime) {
+
+                            cd = v.createDateStr || "";
+                        }
+                        var row = `<tr><td>${v.itemNo}</td><td>${v.lotNo}</td><td>${v.itemCategoryCode}</td><td>${v.qty}</td><td>${v.containerNo}</td><td>${cd}</td><td>${v.user}</td></tr>`;
+                        $("#jfHistoryBody").append(row)
+
+                    });
+
+                } else {
+                    $("#jfHistoryBody").html("<tr class='alert alert-warning'><td colspan='8'>There are no history results for this job</td></tr>");
+                }
+
+
+
+            });
+
+            jfModal.show();
+        }
+
+    </script>
+</body>
+</html>

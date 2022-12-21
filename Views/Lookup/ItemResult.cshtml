@@ -1,0 +1,84 @@
+﻿@model LookupItemResult
+
+<style>
+    @@media only screen and (max-width: 500px) {
+        #card-header{
+            font-size: .75rem;
+        }
+        .card-title{
+            font-size:  .65rem;
+        }
+        .card-text{
+        font-size: .65rem;
+        }
+        .sub-header{
+            font-size:  .65rem;
+            font-weight: bolder;
+        }
+        .inner-card-text{
+            font-size: .65rem;
+        }
+     }
+</style>
+
+<div class="card m-2 border-dark">
+    <div class="card-body">
+        <div id="card-header" class="d-flex flex-wrap row">
+            <h5 class="card-title fw-bold col-6">
+                Item #:
+                <span class="fw-normal">@Model.ItemNo</span>
+            </h5>
+            <p class="card-text fw-bold col-6">
+                Item Description:
+                <span class="fw-normal">@Model.ItemDescription</span>
+            </p>
+            <p class="card-text fw-bold col-6">
+                Location:
+                <span class="fw-normal"> @String.Join(", ", Model.WarehouseEntries.Select(x => x.Location).Distinct().ToArray())</span>
+            </p>
+        </div>
+    </div>
+    <div class="d-flex flex-column flex-wrap align-content-center">
+        @{
+            var whs = Model.WarehouseEntries.ToList();
+        }
+        @if (whs.Count > 0)
+        {
+            var lastLot = "";
+            @foreach (var wh in whs.OrderBy(x => x.LotNo).ThenBy(x => x.Bin).ThenBy(x => x.ContainerNo))
+            {
+                var isLotRow = wh.LotNo != lastLot;
+                lastLot = wh.LotNo;
+                var exp = DateTime.TryParse(wh.ExpDate, out DateTime e) ? e : DateTime.MinValue;
+                var onHold = wh.OnHold.ToUpper() == "YES";
+                var isExp = exp < DateTime.Now;
+
+                var css = onHold ? "alert alert-warning p-1" : "";
+
+
+                if (isLotRow)
+                {
+                    <div class="card col-11 border-success p-1 mb-1">
+                        <div class="row">
+                            <div class="col-4 sub-header">Lot #: <span class="fw-normal">@wh.LotNo</span></div>
+                            <div class="col-4 sub-header">Container #: <a class="fw-normal" href="@Url.Action("Index", new { number = wh.ContainerNo })">@wh.ContainerNo</a></div>
+                            <div class="col-4 sub-header">Qty:<span class="fw-normal">@wh.Quantity</span></div>
+                            <div class="col-4 sub-header">Bin: <a class="fw-normal" href="@Url.Action("Index", new { number = wh.Bin })">@wh.Bin </a></div>
+                            <div class="col-4 sub-header @(isExp ? "alert alert-danger p-1" : "")">Expiration: <span class="fw-normal">@wh.ExpDate</span></div>
+                            <div class="col-4 sub-header">Location: <span class="fw-normal">@wh.Location</span></div>
+                        </div>
+                        <div class="text-end">
+                            @await Html.PartialAsync("MoveMenu", new MoveMenuModel(wh.Bin, wh.ContainerNo, Model.ItemNo, wh.LotNo, decimal.Parse(string.IsNullOrEmpty(wh.Quantity) ? "0" : wh.Quantity)))
+                        </div>
+                    </div>
+                }
+            }
+        }
+        else
+        {
+            <div class="alert alert-warning">
+                There are no Warehouse Entries for this item
+            </div>
+        }
+    </div>
+</div>
