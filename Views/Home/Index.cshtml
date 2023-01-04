@@ -1,4 +1,6 @@
-﻿@{
+﻿@using KQF.Floor.Web.Helpers
+@model CompanyApiResponse
+@{
     ViewData["Title"] = "Home Page";
     var flags = ViewData["EnabledFlags"] as string[] ?? new string[] { };
 }
@@ -28,35 +30,59 @@
         @if (flags.Contains("material-mgmt"))
         {
             <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
-                <a href="@Url.Action("Index", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">             
-                <i class="gg-dice-2" style="margin: 20px auto; --ggs:3;"></i>
-               Thermal Processing
-            </a>
-        </div>
+                <a href="@Url.Action("Index", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">
+                    <i class="gg-dice-2" style="margin: 20px auto; --ggs:3;"></i>
+                    Thermal Processing
+                </a>
+            </div>
         }
 
-       @* @if (flags.Contains("material-mgmt"))
+        @if (Model != null)
         {
-            <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
-                <a href="@Url.Action("Doubling", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">
-                <div class=" badge bg-light text-dark dashboard-button-overlay">Material Management</div>
-                <i class="gg-dice-2" style="margin: 20px auto; --ggs:3;"></i>
-                Doubling
-            </a>
-        </div>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Id</th>
+                        <th>Name</th>
+                        <th>Display Name</th>
+                    </tr>
+                </thead>
+                
+                <tbody>
+                    @foreach (var item in Model.Companies)
+                    {
+                        <tr>
+                            <td>@item.Id</td>
+                            <td>@item.Name</td>
+                            <td>@item.DisplayName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         }
 
-        @if (flags.Contains("material-mgmt"))
-        {
-            <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
+        @* @if (flags.Contains("material-mgmt"))
+            {
+                <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
+                    <a href="@Url.Action("Doubling", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">
+                    <div class=" badge bg-light text-dark dashboard-button-overlay">Material Management</div>
+                    <i class="gg-dice-2" style="margin: 20px auto; --ggs:3;"></i>
+                    Doubling
+                </a>
+            </div>
+            }
 
-            <a href="@Url.Action("Container", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">
-                <div class=" badge bg-light text-dark dashboard-button-overlay">Material Management</div>
-                <i class="gg-ratio" style="margin: 20px auto; --ggs:3;"></i>
-                Cart/Ctr to Bin
-            </a>
-        </div>
-        }*@
+            @if (flags.Contains("material-mgmt"))
+            {
+                <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
+
+                <a href="@Url.Action("Container", "MaterialManagement")" class="btn btn-lg btn-info text-center w-100 h-100 pt-5 pb-5">
+                    <div class=" badge bg-light text-dark dashboard-button-overlay">Material Management</div>
+                    <i class="gg-ratio" style="margin: 20px auto; --ggs:3;"></i>
+                    Cart/Ctr to Bin
+                </a>
+            </div>
+            }*@
 
     </div>
 </div>

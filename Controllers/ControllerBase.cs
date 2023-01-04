@@ -57,28 +57,28 @@ namespace KQF.Floor.Web.Controllers
 
                     //Make sure the session didn't expire and the user credentials match
 
-                    var credentials = User.GetCredentials();
-                    if (credentials == null || credentials.Username != User.UserName())
-                    {
-                        context.Result = new RedirectToRouteResult(new RouteValueDictionary(
-                            new
-                            {
-                                controller = "Account",
-                                action = "Logout"
-                            }));
-                        return;
-                    }
+                    //var credentials = User.GetCredentials();
+                    //if (credentials == null || credentials.Username != User.UserName())
+                    //{
+                    //    context.Result = new RedirectToRouteResult(new RouteValueDictionary(
+                    //        new
+                    //        {
+                    //            controller = "Account",
+                    //            action = "Logout"
+                    //        }));
+                    //    return;
+                    //}
                 }
-                var locationClaim = User.Claims.FirstOrDefault(x => x.Type.ToLower() == $"access.{_locationProvider.CurrentLocation}".ToLower() && x.Value.ToLower() == "supervisor");
+                //var locationClaim = User.Claims.FirstOrDefault(x => x.Type.ToLower() == $"access.{_locationProvider.CurrentLocation}".ToLower() && x.Value.ToLower() == "supervisor");
 
 
-                ViewData["IsSupervisor"] = locationClaim == null ? false : true;
-                ViewData["CurrentLocation"] = _locationProvider.CurrentLocation;
-                ViewData["Locations"] = _locationProvider.Locations;
-                ViewData["EnabledFlags"] = _featureFlags.GetAllEnabledFlags(context.HttpContext.User);
-                ViewData["EoD"] = _locationProvider.LocationDayOffsetInSeconds;
+                //ViewData["IsSupervisor"] = locationClaim == null ? false : true;
+                //ViewData["CurrentLocation"] = _locationProvider.CurrentLocation;
+                //ViewData["Locations"] = _locationProvider.Locations;
+                //ViewData["EnabledFlags"] = _featureFlags.GetAllEnabledFlags(context.HttpContext.User);
+                //ViewData["EoD"] = _locationProvider.LocationDayOffsetInSeconds;
 
-                SetContextPrinterData(false, false);
+                //SetContextPrinterData(false, false);
       
             }
             base.OnActionExecuting(context);

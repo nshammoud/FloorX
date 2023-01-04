@@ -34,9 +34,11 @@ namespace KQF.Floor.Web.Controllers
         }
 
         [HttpGet]
-        public IActionResult Login(string returnUrl)
+        public async Task Login(string returnUrl)
         {
-            return View();
+            returnUrl = "/signin-microsoft";
+            await HttpContext.ChallengeAsync("Microsoft", new AuthenticationProperties() { RedirectUri = returnUrl });
+            //return View();
         }
 
         [HttpPost]

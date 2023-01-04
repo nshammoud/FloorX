@@ -49,8 +49,17 @@ namespace KQF.Floor.Web
 
         public static bool HasRole(this System.Security.Claims.ClaimsPrincipal user, string role, string location)
         {
-            var claim = user?.Claims?.FirstOrDefault(x => x.Type.ToLower() == $"access.{location.ToLower()}" && x.Value.ToLower() == role.ToLower());
-            return claim != null;
+            try
+            {
+                //NSH temporary commented out ..
+                //var claim = user?.Claims?.FirstOrDefault(x => x.Type.ToLower() == $"access.{location.ToLower()}" && x.Value.ToLower() == role.ToLower());
+                //return claim != null;
+                return false;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
         }
 
         public static IEnumerable<string> GetAllRoles(this System.Security.Claims.ClaimsPrincipal user,  string location)
