@@ -1,4 +1,5 @@
-﻿<!DOCTYPE html>
+﻿@using Microsoft.AspNetCore.Http;
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -39,7 +40,7 @@
         <nav class="navbar navbar-expand-md @headerClass" aria-label="KQF Floor">
             <div class="container-fluid">
                 <a class="navbar-brand " href="/">
-                  <i class="gg-home-alt d-inline-block"></i>  @ViewData["AppDisplayName"]
+                    <i class="gg-home-alt d-inline-block"></i>  @ViewData["AppDisplayName"]
                 </a>
                 @if (User.Identity.IsAuthenticated)
                 {
@@ -50,25 +51,31 @@
 
                     <div class="collapse navbar-collapse" id="navbarsExample06">
                         <ul class="navbar-nav me-auto mb-xl-0">
-                            <li class="nav-item dropdown mr-3">
+                            <li class="nav-item dropdown mr-3 companiesMenu" style="margin-right:2% !important;">
+                                <a class="nav-link dropdown-toggle" href="#" id="dropdown06" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="gg-chevron-double-right d-inline"></i> Companies
+                                </a>
+                                <ul class="dropdown-menu companiesList" aria-labelledby="dropdown06">
+                                </ul>
+                            </li>
+                            <li class="nav-item dropdown ml-3 mr-3">
                                 <a class="nav-link dropdown-toggle" href="#" id="dropdown06" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="gg-chevron-double-right d-inline"></i> @(String.IsNullOrEmpty(currentLocation) ? "Location" : currentLocation)
                                 </a>
-                                <ul class="dropdown-menu" aria-labelledby="dropdown06">
+                                <ul class="dropdown-menu locationDropDown" aria-labelledby="dropdown06">
                                     @foreach (var l in ((ViewData["Locations"] as string[]) ?? new string[] { }))
                                     {
                                         <li>
                                             <a class="dropdown-item" href="@Url.Action("SwitchTo", "Account", new
-                                                        {
-                                                            location = l,
-                                                            redirect = Context.Request.Path + Context.Request.QueryString
-                                                        })">@l</a>
-                                                        </li>
-                                                    }
-
-
+                                                                      {
+                                                                          location = l,
+                                                                          redirect = Context.Request.Path + Context.Request.QueryString
+                                                                      })">@l</a>
+                                                    </li>
+                                    }
                                 </ul>
                             </li>
+
                             <li></li>
                             <li class="nav-item pl-5">
                                 <a class="nav-link ml-5" aria-current="page" href="/">Dashboard</a>
@@ -81,7 +88,7 @@
                             <li class="nav-item">
                                 <a class="nav-link " aria-current="page" href="@Url.Action("Index", "Output")">Outputs</a>
                             </li>
-                             <li class="nav-item">
+                            <li class="nav-item">
                                 <a class="nav-link " aria-current="page" href="@Url.Action("Index", "Lookup")">Lookup</a>
                             </li>
                             @if (flags.Contains("material-mgmt"))
@@ -93,29 +100,32 @@
 
                         </ul>
 
-
                         @if (Context.User?.Identity?.IsAuthenticated == true)
                         {
                             <div class=" float-end @headerTextClass " style="margin-right:5px; ">
-                               
+
                                 <div class="dropdown dropstart">
-                                  <button class="btn btn-sm btn-light dropdown-toggle p-1 mr-5"   type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-                                    @User.Claims.FirstOrDefault(x => x.Type == System.Security.Claims.ClaimTypes.Name).Value
-                                  </button>
-                                  <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
-    
-                                    <li><a class="dropdown-item" href="#" onclick="printerModal.show();return false;">Printer: <span id="currentPrinter">@ViewData["CurrentPrinter"]</span> &nbsp;<i class="fa fa-edit"></i></a></li>
-                                    <li><hr /></li>
+                                    <button class="btn btn-sm btn-light dropdown-toggle p-1 mr-5" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                                        @User.Claims.FirstOrDefault(x => x.Type == System.Security.Claims.ClaimTypes.Name).Value
+                                    </button>
+                                    <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
 
-                                @if (User.HasRole("administrator", ViewData["CurrentLocation"] as string))
-                                {
-                                     <li><a class="dropdown-item" href="#" onclick="clearEoDCache( );return false;">End Of Day: 
-                                         <span id="EoD">@ViewData["EoD"]</span>s &nbsp;<i class="fa fa-refresh"></i></a></li>                                  
-                                  
-                                }
+                                        <li><a class="dropdown-item" href="#" onclick="printerModal.show();return false;">Printer: <span id="currentPrinter">@ViewData["CurrentPrinter"]</span> &nbsp;<i class="fa fa-edit"></i></a></li>
+                                        <li><hr /></li>
 
-                                    <li> <a class="dropdown-item" aria-current="page" href="@Url.Action("Logout", "Account")"> Sign out <i class="gg-log-out float-end"></i></a></li>
-                                  </ul>
+                                        @if (User.HasRole("administrator", ViewData["CurrentLocation"] as string))
+                                        {
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="clearEoDCache( );return false;">
+                                                    End Of Day:
+                                                    <span id="EoD">@ViewData["EoD"]</span>s &nbsp;<i class="fa fa-refresh"></i>
+                                                </a>
+                                            </li>
+                                        }
+                                        <li>
+                                            <a class="dropdown-item" aria-current="page" href="@Url.Action("Logout", "Account")"> Sign out <i class="gg-log-out float-end"></i></a>
+                                        </li>
+                                    </ul>
                                 </div>
                             </div>
                         }
@@ -173,7 +183,7 @@
     </div>
 
 
-      <div class="modal fade" id="changePrinterModal"
+    <div class="modal fade" id="changePrinterModal"
          data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel1" aria-hidden="true">
         <div class="modal-dialog modal-md">
             <div class="modal-content">
@@ -182,21 +192,22 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                   
+
                     @{
-                        var printers = ( ViewData["Printers"] as string[]) ?? new string[0];
+                        var printers = (ViewData["Printers"] as string[]) ?? new string[0];
                         var currentPrinter = ViewData["CurrentPrinter"] as string ?? "";
                     }
-                    @if(printers.Length == 0)
+                    @if (printers.Length == 0)
                     {
                         <h5 class="alert alert-warning">There are no printers to choose from. Contact you administrator.</h5>
-                    }else
+                    }
+                    else
                     {
                         <p>Select one...</p>
-                       <div class="list-group">
-                        @foreach(var p in printers)
-                        {
-                                if(p.ToLower() == currentPrinter.ToLower())
+                        <div class="list-group">
+                            @foreach (var p in printers)
+                            {
+                                if (p.ToLower() == currentPrinter.ToLower())
                                 {
                                     <button type="button" data-change-printer="@p.Replace("\\", "_")" class="list-group-item list-group-item-action active" aria-current="true">
                                         @p
@@ -206,16 +217,16 @@
                                 {
                                     <button type="button" data-change-printer="@p.Replace("\\", "_")" class="list-group-item list-group-item-action">@p</button>
                                 }
-                                 
-                        }
-                        </div> 
+
+                            }
+                        </div>
                     }
 
-                    
-                       
 
-                     
-                  
+
+
+
+
 
                 </div>
                 <div class="modal-footer">
@@ -230,7 +241,7 @@
         <div class="container">
             &copy; 2021 - KQF.Floor.Web - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
 
-           
+
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
@@ -246,7 +257,39 @@
         var jfModal = new bootstrap.Modal(document.getElementById('jfHistoryModal'), {});
         var printerModal = new bootstrap.Modal(document.getElementById('changePrinterModal'), {});
 
+        var companyId = '@Context.Session.GetString("CompanyID")';
+
+        var isCompaniesLoading = false;
+        function loadCompanies() {
+            var companies = $(".companiesList li");
+
+            if (companies.length === 0 && !isCompaniesLoading) {
+                isCompaniesLoading = true;
+                $.get("/home/GetCompanies", function (html) {
+                    $(".companiesList").append(html);
+                    isCompaniesLoading = false;
+                })
+            }
+        }
+
+        loadCompanies();
+
+        if (companyId !== "") {
+            loadLocations();
+        }
+
+        function loadLocations() {
+            $.get("/home/GetLocationsByCompanyId?companyId=" + companyId + "&jsonOnly=true", function (locations) {
+                $(".locationDropDown").empty();
+                $.each(locations.returnList, function () {
+                    var locationUlr = `/lookup?number=${this.code}`;
+                    $(".locationDropDown").append(`<li><a class="dropdown-item" href='${locationUlr}'>${this.code}</a></li>`);
+                })
+            })
+        }
+
         $(document).ready(() => {
+
             setInterval(() => {
                 var m = new Date();
                 var dateString =
@@ -266,7 +309,7 @@
 
             $("button[data-change-printer]").click( (e)=> {
                 var url = '@Url.Action("ChangePrinter", "Account")';
-                
+
                 var p = $(e.currentTarget).data("change-printer");
                 var pesc = p.replaceAll("_", "\\");
                 printerModal.hide();
@@ -279,20 +322,20 @@
                         $(`button[data-change-printer=${p}]`).addClass("active");
                     }else {
                         toastr.error("Could not change printer. An error occurred.");
-                    }                
+                    }
                 }).then( ()=> {printerModal.hide();});
             });
-            
+
         });
-     
-   
+
+
         function clearEoDCache(){
             $.post( '@Url.Action("ClearEoD", "Home")', { }, (r)=>{
                 toastr.info("EoD Offset is " +  r + "s");
                 $("#EoD").text(r);
             })
         }
-        
+
 
         function showJFHistoryModal(jobNo, source) {
             $("#jfHistoryBody").html("");

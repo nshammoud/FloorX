@@ -1,0 +1,23 @@
+﻿@using KQF.Floor.Web.Models.BusinessCentralApi_Models
+@model GenericResponse<Location>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>OdataeTag</th>
+            <th>Code</th>
+            <th>Name</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in Model.ReturnList)
+        {
+            <tr>
+                <td>@item.OdataeTag</td>
+                <td>@item.Code</td>
+                <td>@item.Name</td>
+            </tr>
+        }
+    </tbody>
+</table>

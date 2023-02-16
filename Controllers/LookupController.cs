@@ -1,17 +1,21 @@
 ﻿using AutoMapper;
-using KQF.Floor.NavServices.ProductionOrders;
 using KQF.Floor.Web.Configuration;
+using KQF.Floor.Web.Helpers;
 using KQF.Floor.Web.Models;
+using KQF.Floor.Web.Models.BusinessCentralApi_Models;
 using KQF.Floor.Web.NavServices.Lookup;
-using KQF.Floor.Web.NavServices.ProductionMgmt;
-using KQF.Floor.Web.NavServices.WCResources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Xml;
+using System.Xml.Serialization;
 
 namespace KQF.Floor.Web.Controllers
 {
@@ -22,6 +26,8 @@ namespace KQF.Floor.Web.Controllers
         private readonly LookupClient _lookupClient;
         private readonly IMapper _mapper;
         KQF.Floor.Data.FloorDataContext _context;
+        private readonly IOptions<LoginBaseSettingConfig> _config;
+        private readonly IOptions<BusinessCentralApis> _businessApis;
 
         public LookupController(
             KQF.Floor.Data.FloorDataContext context,
@@ -30,27 +36,73 @@ namespace KQF.Floor.Web.Controllers
           IMapper mapper,
           ILogger<LookupController> logger,
           Services.UserSettingsService userSettingsService,
-          Auth.LocationProvider locationProvider, FeatureFlagProvider featureFlags) : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags)
+          Auth.LocationProvider locationProvider, FeatureFlagProvider featureFlags, IOptions<LoginBaseSettingConfig> config,
+          IOptions<BusinessCentralApis> businessApis) : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags)
         {
 
             _mapper = mapper;
             _lookupClient = lookupClient;
             _context = context;
-
+            _config = config;
+            _businessApis = businessApis;
         }
 
         public async Task<IActionResult> Index(string number)
         {
+            ViewBag.code = number;
+            var lookupModel = new LookupModel
+            {
+                Results = new List<LookupResult>()
+            };
             if (!string.IsNullOrEmpty(number))
             {
-                var model = await DoLookup(number);
-                return View(model);
+                try
+                {
+                    lookupModel = await DoLookup(number);
+                }
+                catch (Exception)
+                {
+                }
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.LookupManagementBin}";
+                apiUrl = string.Format(apiUrl, companyId);
+                var obj = new
+                {
+                    pLocation = string.Empty,
+                    pBinCode = string.Empty,
+                    pItemNo = number,
+                    pLotNo = string.Empty
+                };
+                var lookupResults = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(apiUrl, obj);
+                if (!string.IsNullOrEmpty(lookupResults.ReturnList))
+                {
+                    try
+                    {
+                        var serializer = new XmlSerializer(typeof(Models.BusinessCentralApi_Models.BinLookup));
+                        using (TextReader reader = new StringReader(lookupResults.ReturnList))
+                        {
+                            var result = (Models.BusinessCentralApi_Models.BinLookup)serializer.Deserialize(reader);
+                            lookupModel.LookupResults = result;
+                            if (result.Bin != null)
+                            {
+                                lookupModel.SearchTerm = number;
+                            }
+                            else
+                            {
+                                result.Bin = new List<Models.BusinessCentralApi_Models.BinLookupBin>().ToArray();
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                }
+                return View(lookupModel);
             }
             else
             {
-                return View(new LookupModel() { SearchTerm = "", Results = new List<LookupResult>() });
+                return View(new LookupModel() { SearchTerm = number, Results = new List<LookupResult>() });
             }
-
         }
 
 
@@ -68,7 +120,7 @@ namespace KQF.Floor.Web.Controllers
                 pLocation = _locationProvider.CurrentLocation.ToUpper(),
 
                 pBinCode = number,
-                pBinLookupXML = new BinLookup()
+                pBinLookupXML = new Web.NavServices.Lookup.BinLookup()
                 {
                     Bin = new Bin[] { },
                     Text = new string[] { }
@@ -77,9 +129,6 @@ namespace KQF.Floor.Web.Controllers
                 pLotNo = ""
             });
             var bins = binResults.pBinLookupXML?.Bin?.Where(x => x.LocationCode.ToUpper() == _locationProvider.CurrentLocation.ToUpper()).ToArray();
-
-
-
             var itemResults = await _lookupClient.ItemLookupAsync(new ItemLookup1()
             {
                 pBin = "",
@@ -136,7 +185,7 @@ namespace KQF.Floor.Web.Controllers
 
             var history = (await _context.SPJFJobHistory(args.JobNo))
                 .Where(x => x.SrcSubType.ToLower() == args.Source.ToLower() &&
-                iccs.Contains(x.ItemCategoryCode.ToLower()))              
+                iccs.Contains(x.ItemCategoryCode.ToLower()))
                 .ToList();
 
             history.ForEach(x =>

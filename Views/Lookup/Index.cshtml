@@ -1,12 +1,13 @@
-﻿@model LookupModel
+﻿@using Newtonsoft.Json
+@model LookupModel
 
 @{
     var restultIndex = 0;
 }
- 
+
 <style>
     .inner-table {
-        margin-left:20px;
+        margin-left: 20px;
         font-size: 1rem;
     }
 </style>
@@ -28,66 +29,91 @@
     </div>
     <div class="row">
         <div class="col-12">
-            @if(Model.Results.Count == 0 && !String.IsNullOrEmpty(Model.SearchTerm))
+            @if (Model.Results.Count == 0 && Model.LookupResults.Bin == null && !String.IsNullOrEmpty(Model.SearchTerm))
             {
-               <div class="col-md-4 offset-md-4 alert alert-info text-center">No Results for <strong>@Model.SearchTerm</strong></div>
-            }
-            else {
-
-            <div class="accordion" id="results">
-               
-
-                @foreach (var r in Model.Results)
+                @if (ViewBag.lookupResults != null)
                 {
-                    <div class="accordion-item">
-                        @if (!string.IsNullOrEmpty(@r.LocationCode))
-                        {
-                            <h2 class="accordion-header" id="heading@(restultIndex)">
-                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(restultIndex)" aria-expanded="true" aria-controls="collapse@(restultIndex)">
-                                    <div class="d-flex flex-row justify-content-between col-12">
-                                        <div class="col-6">
-                                            @r.ResultType: @r.Title
+                    <div>
+                        @JsonConvert.DeserializeObject(ViewBag.lookupResults);
+                    </div>
+                }
+                <div class="col-md-4 offset-md-4 alert alert-info text-center">No Results for <strong>@Model.SearchTerm</strong></div>
+            }
+            else
+            {
+                <div class="accordion" id="results">
+                    @if (Model.LookupResults.Bin.Length > 0)
+                    {
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Location code</th>
+                                    <th>Bin Code</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.LookupResults.Bin)
+                                {
+                                    <tr>
+                                        <td>@item.LocationCode</td>
+                                        <td>@item.BinCode</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                    @foreach (var r in Model.Results)
+                    {
+                        <div class="accordion-item">
+                            @if (!string.IsNullOrEmpty(@r.LocationCode))
+                            {
+                                <h2 class="accordion-header" id="heading@(restultIndex)">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(restultIndex)" aria-expanded="true" aria-controls="collapse@(restultIndex)">
+                                        <div class="d-flex flex-row justify-content-between col-12">
+                                            <div class="col-6">
+                                                @r.ResultType: @r.Title
+                                            </div>
+                                            <div class="col-6">
+                                                Location: @r.LocationCode
+                                            </div>
                                         </div>
-                                        <div class="col-6">
-                                            Location: @r.LocationCode
-                                        </div>
-                                    </div>
-                                </button>
-                            </h2>
-                        }
-                        else
-                        {
-                            <h2 class="accordion-header" id="heading@(restultIndex)">
-                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(restultIndex)" aria-expanded="true" aria-controls="collapse@(restultIndex)">
-                                    @r.ResultType: @r.Title
-                                </button>
-                            </h2>
-                        }
-                      
-                        <div id="collapse@(restultIndex)" class="accordion-collapse collapse show" aria-labelledby="heading@(restultIndex)" data-bs-parent="#results">
-                            <div class="accordion-body">
+                                    </button>
+                                </h2>
+                            }
+                            else
+                            {
+                                <h2 class="accordion-header" id="heading@(restultIndex)">
+                                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(restultIndex)" aria-expanded="true" aria-controls="collapse@(restultIndex)">
+                                        @r.ResultType: @r.Title
+                                    </button>
+                                </h2>
+                            }
 
-                                @if (r.ResultType == "Bin")
-                                {
-                                    @await Html.PartialAsync("BinResult", r)
-                                }
-                                else if (r.ResultType == "Container")
-                                {
-                                    @await Html.PartialAsync("ContainerResult", r)
-                                }
-                                else if (r.ResultType == "Item")
-                                {
-                                    @await Html.PartialAsync("ItemResult", r)
-                                }
+                            <div id="collapse@(restultIndex)" class="accordion-collapse collapse show" aria-labelledby="heading@(restultIndex)" data-bs-parent="#results">
+                                <div class="accordion-body">
+
+                                    @if (r.ResultType == "Bin")
+                                    {
+                                        @await Html.PartialAsync("BinResult", r)
+                                    }
+                                    else if (r.ResultType == "Container")
+                                    {
+                                        @await Html.PartialAsync("ContainerResult", r)
+                                    }
+                                    else if (r.ResultType == "Item")
+                                    {
+                                        @await Html.PartialAsync("ItemResult", r)
+                                    }
 
 
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    restultIndex++;
-                }
-            </div>
+                        restultIndex++;
+                    }
+                </div>
             }
         </div>
     </div>

@@ -1,0 +1,11 @@
+﻿@using KQF.Floor.Web.Models.BusinessCentralApi_Models
+@model GenericResponse<Company_Detail>
+
+@foreach (var company in Model.ReturnList)
+{
+    <li>
+        <a class="dropdown-item" href="~/home?companyId=@company.Id">
+            @company.Name
+        </a>
+    </li>
+}

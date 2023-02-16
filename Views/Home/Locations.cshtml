@@ -1,0 +1,38 @@
+﻿
+<div class=" mt-2">
+    <div class="row">
+        <div class="col-sm-12 col-md-8 offset-md-2 ">
+            <div class="bg-light rounded-2 p-3 m-1">
+                <h5>Lookup by company id</h5>
+                <div class="input-group mb-3">
+                    <input type="text" class="form-control" placeholder="Company id #" aria-label="Company id" aria-describedby="btnLookup" id="companyId">
+                    <button class="btn btn-primary" type="button" id="btnSearchLocations">
+                        <i class="gg-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-sm-12" id="locationList">
+
+        </div>
+    </div>
+</div>
+
+@section scripts{
+    <script>
+        $(document).ready(function () {
+            $("#btnSearchLocations").on("click", function () {
+                var companyId = $("#companyId").val();
+                if (companyId !== "") {
+                    $.get("/home/GetLocationsByCompanyId?companyId=" + companyId, function (htmlResponse) {
+                        $("#locationList").empty();
+                        $("#locationList").append(htmlResponse);
+                    })
+                }
+            })
+        })
+    </script>
+}

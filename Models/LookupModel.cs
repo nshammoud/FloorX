@@ -1,7 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace KQF.Floor.Web.Models
 {
@@ -9,6 +6,8 @@ namespace KQF.Floor.Web.Models
     {
         public string SearchTerm { get; set; }
         public List<LookupResult> Results { get; set; }
+
+        public Models.BusinessCentralApi_Models.BinLookup LookupResults { get; set; }
     }
 
     public abstract class LookupResult

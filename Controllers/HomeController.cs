@@ -1,17 +1,14 @@
-﻿using KQF.Floor.Web.Auth.Services;
-using KQF.Floor.Web.Configuration;
+﻿using KQF.Floor.Web.Configuration;
 using KQF.Floor.Web.Helpers;
 using KQF.Floor.Web.Hubs;
 using KQF.Floor.Web.Models;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using KQF.Floor.Web.Models.BusinessCentralApi_Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -28,43 +25,97 @@ namespace KQF.Floor.Web.Controllers
         private readonly IOptions<LoginBaseSettingConfig> _config;
         private readonly Auth.Services.IAuthenticationService _auth;
         private readonly IHubContext<ConsumptionHub> _hub;
+        private readonly IOptions<BusinessCentralApis> _businessApis;
 
         public HomeController(ILogger<HomeController> logger, Auth.Services.IAuthenticationService authSvc, Auth.LocationProvider locationProvider,
-            Microsoft.Extensions.Options.IOptions<UIConfiguration> uiConfig,
+            IOptions<UIConfiguration> uiConfig,
             Services.UserSettingsService userSettingsService,
-            IHubContext<ConsumptionHub> hub, FeatureFlagProvider featureFlags, IOptions<LoginBaseSettingConfig> config) : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags)
+            IHubContext<ConsumptionHub> hub, FeatureFlagProvider featureFlags, IOptions<LoginBaseSettingConfig> config, IOptions<BusinessCentralApis> businessApis)
+            : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags)
         {
             _auth = authSvc;
             _hub = hub;
             _config = config;
+            _businessApis = businessApis;
         }
 
-        public IActionResult Index()
+        public IActionResult Index(string companyId)
         {
-            var tokenRespone = HttpContext.User.Claims.FirstOrDefault(c=>c.Type == "access_token_response")?.Value;
-            if (!string.IsNullOrEmpty(tokenRespone))
+            if (!string.IsNullOrEmpty(companyId))
             {
-                var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(tokenRespone);
-                if (tokenResponse != null)
-                {
-                    var companies = new BusinessCentralApiHelper(_config.Value).GetCompanyApiResponse(tokenResponse.Access_token);
-                    return View(companies);
-                }
+                HttpContext.Session.SetString("CompanyID", companyId);
             }
             return View();
+        }
+
+        [HttpGet]
+        public IActionResult GetCompanies()
+        {
+            try
+            {
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.Companies}";
+                var companies = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Company_Detail>>(apiUrl);
+                HttpContext.Session.SetString("CompaniesList", JsonConvert.SerializeObject(companies));
+                return PartialView("_CompaniesList", companies);
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", ex.Message);
+                return View();
+            }
+
+            //var sessionStoredCompanies = HttpContext.Session.GetString("CompaniesList");
+            //if (!string.IsNullOrEmpty(sessionStoredCompanies))
+            //{
+            //    var companies = JsonConvert.DeserializeObject<GenericResponse<Company_Detail>>(sessionStoredCompanies);
+            //    return PartialView("_CompaniesList", companies);
+            //}
+            //else
+            //{
+            //    var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.Companies}";
+            //    var companies = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Company_Detail>>(apiUrl);
+            //    HttpContext.Session.SetString("CompaniesList", JsonConvert.SerializeObject(companies));
+            //    return PartialView("_CompaniesList", companies);
+            //}
+        }
+
+        public IActionResult Locations()
+        {
+            return View();
+        }
+
+        [HttpGet]
+        public IActionResult GetLocationsByCompanyId(string companyId, bool jsonOnly = false)
+        {
+            var sessionStoredCompanies = HttpContext.Session.GetString("LocationsList_" + companyId);
+            var locations = new GenericResponse<Location>();
+
+            if (!string.IsNullOrEmpty(sessionStoredCompanies))
+            {
+                locations = JsonConvert.DeserializeObject<GenericResponse<Location>>(sessionStoredCompanies);
+            }
+            else
+            {
+                var locationApi = string.Format(_businessApis.Value.Location, companyId);
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{locationApi}";
+                locations = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Location>>(apiUrl);
+
+                HttpContext.Session.SetString($"LocationsList_{companyId}", JsonConvert.SerializeObject(locations));
+            }
+            
+            if (jsonOnly)
+            {
+                return Json(locations);
+            }
+            else
+            {
+                return PartialView("_LocationList", locations);
+            }
         }
 
         [AllowAnonymous]
         public IActionResult callback(string code)
         {
-            //var tokenRespone = HttpContext.Session.GetString("access_token_response");
-            //HttpContext.Session.SetString("refresh_token", code);
-            //if (string.IsNullOrEmpty(tokenRespone))
-            //{
-            //    var tokenResponse = BusinessCentralApiHelper.GetToken(code);
-            //    var jsonResponse = JsonConvert.SerializeObject(tokenResponse);
-            //    HttpContext.Session.SetString("access_token_response", jsonResponse);
-            //}
             return RedirectToAction("index");
         }
 
@@ -72,7 +123,6 @@ namespace KQF.Floor.Web.Controllers
         [AllowAnonymous]
         public IActionResult signin_oidc(string code)
         {
-            //var tokenResponse = BusinessCentralApiHelper.GetTokenV2();
             return RedirectToAction("index");
         }
 
@@ -80,8 +130,6 @@ namespace KQF.Floor.Web.Controllers
         [AllowAnonymous]
         public IActionResult signin_microsoft(string code)
         {
-            //var token = BusinessCentralApiHelper.GetToken(code);
-            //var claims = HttpContext.User.Claims;
             return RedirectToAction("index");
         }
 

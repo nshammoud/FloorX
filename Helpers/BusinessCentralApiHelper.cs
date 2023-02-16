@@ -1,24 +1,57 @@
-﻿using AutoMapper.Configuration;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
+﻿using KQF.Floor.Web.Models.BusinessCentralApi_Models;
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 
 namespace KQF.Floor.Web.Helpers
 {
     public class BusinessCentralApiHelper
     {
-        private  static LoginBaseSettingConfig _config;
-        public BusinessCentralApiHelper(LoginBaseSettingConfig config)
+        private static LoginBaseSettingConfig _config;
+        private readonly HttpContext _httpContext;
+        private static TokenResponse tokenResponse;
+        public BusinessCentralApiHelper(LoginBaseSettingConfig config, HttpContext httpContext = null)
         {
             _config = config;
+            _httpContext = httpContext;
+            if(_httpContext != null)
+            {
+                if(tokenResponse == null)
+                {
+                    var tokenResposneVal = _httpContext.User.Claims.FirstOrDefault(c => c.Type == "access_token_response")?.Value;
+                    if (!string.IsNullOrEmpty(tokenResposneVal))
+                    {
+                        tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(tokenResposneVal);
+                        if (tokenResponse.Expires_date < DateTime.Now)
+                        {
+                            var refreshToken = _httpContext.User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+                            if (!string.IsNullOrEmpty(refreshToken))
+                            {
+                                tokenResponse = GetToken(refreshToken);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (tokenResponse.Expires_date < DateTime.Now)
+                    {
+                        var refreshToken = _httpContext.User.Claims.FirstOrDefault(c => c.Type == "refresh_token")?.Value;
+                        if (!string.IsNullOrEmpty(refreshToken))
+                        {
+                            tokenResponse = GetToken(refreshToken);
+                        }
+                    }
+                }
+            }
         }
 
         //NSH not using this just a test ..
-        public  TokenResponse GetTokenV2()
+        public TokenResponse GetTokenV2()
         {
             var httpClient = new HttpClient();
             var paramets = new Dictionary<string, string>
@@ -40,7 +73,7 @@ namespace KQF.Floor.Web.Helpers
             return response;
         }
 
-        public  TokenResponse GetToken(string code)
+        public TokenResponse GetToken(string code)
         {
             try
             {
@@ -61,103 +94,57 @@ namespace KQF.Floor.Web.Helpers
                 var result = httpClient.PostAsync(url, urlEncoded).Result;
                 var content = result.Content.ReadAsStringAsync().Result;
                 var response = JsonConvert.DeserializeObject<TokenResponse>(content);
+                var timeSpan = TimeSpan.FromSeconds(response.Expires_in);
+                response.Expires_date = DateTime.Now.AddHours(timeSpan.Hours).AddMinutes(timeSpan.Minutes).AddSeconds(timeSpan.Seconds);
 
                 return response;
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-        public  CompanyApiResponse GetCompanyApiResponse(string accessToken)
-        {
-            try
-            {
-                var client = new RestClient("https://api.businesscentral.dynamics.com/v2.0/Sandbox/api/microsoft/automation/v2.0/companies");
-                var request = new RestRequest();
-                request.AddHeader("Authorization", $"Bearer {accessToken}");
-                var response = client.GetAsync(request).Result;
-                var companies = JsonConvert.DeserializeObject<CompanyApiResponse>(response.Content);
-                return companies;
             }
             catch (Exception ex)
             {
                 return null;
             }
         }
-    }
 
-    public class CompanyApiResponse
-    {
-        [JsonProperty(PropertyName = "@odata.context")]
-        public string Odatacontext { get; set; }
+        public TResponse GetApiResponse<TResponse>(string url,string accessToken = "")
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(accessToken))
+                {
+                    accessToken = tokenResponse.Access_token;
+                }
+                var client = new RestClient(url);
+                var request = new RestRequest();
+                request.AddHeader("Authorization", $"Bearer {accessToken}");
+                var response = client.GetAsync(request).Result;
+                var companies = JsonConvert.DeserializeObject<TResponse>(response.Content);
+                return companies;
+            }
+            catch (Exception ex)
+            {
+                return default;
+            }
+        }
 
-        [JsonProperty(PropertyName = "value")]
-        public Company_Detail[] Companies { get; set; }
-    }
 
-    public class Company_Detail
-    {
-        [JsonProperty(PropertyName = "id")]
-        public string Id { get; set; }
-
-        [JsonProperty(PropertyName = "systemVersion")]
-        public string SystemVersion { get; set; }
-
-        [JsonProperty(PropertyName = "timestamp")]
-        public int Timestamp { get; set; }
-
-        [JsonProperty(PropertyName = "name")]
-        public string Name { get; set; }
-
-        [JsonProperty(PropertyName = "displayName")]
-        public string DisplayName { get; set; }
-
-        [JsonProperty(PropertyName = "businessProfileId")]
-        public string BusinessProfileId { get; set; }
-
-        [JsonProperty(PropertyName = "systemCreatedAt")]
-        public DateTime SystemCreatedAt { get; set; }
-
-        [JsonProperty(PropertyName = "systemCreatedBy")]
-        public string SystemCreatedBy { get; set; }
-
-        [JsonProperty(PropertyName = "systemModifiedAt")]
-        public DateTime SystemModifiedAt { get; set; }
-
-        [JsonProperty(PropertyName = "systemModifiedBy")]
-        public string SystemModifiedBy { get; set; }
-    }
-
-    public class TokenResponse
-    {
-        [JsonProperty(PropertyName = "token_type")]
-        public string Token_type { get; set; }
-
-        [JsonProperty(PropertyName = "scope")]
-        public string Scope { get; set; }
-
-        [JsonProperty(PropertyName = "expires_in")]
-        public int Expires_in { get; set; }
-
-        [JsonProperty(PropertyName = "ext_expires_in")]
-        public int Ext_expires_in { get; set; }
-
-        [JsonProperty(PropertyName = "access_token")]
-        public string Access_token { get; set; }
-    }
-
-    public class LoginBaseSettingConfig
-    {
-        public string BaseUrl { get; set; }
-
-        public string Client_id { get; set; }
-
-        public string Client_secret { get; set; }
-
-        public string Redirect_uri { get; set; }
-
-        public string Tenant_id { get; set; }
+        public TResponse PostApiResponse<TResponse>(string url, object bodyParameters)
+        {
+            try
+            {
+                var accessToken = tokenResponse.Access_token;
+                var client = new RestClient(url);
+                var request = new RestRequest();
+                request.AddHeader("Authorization", $"Bearer {accessToken}");
+                request.RequestFormat = DataFormat.Json;
+                request.AddJsonBody(bodyParameters);
+                var response = client.PostAsync(request).Result;
+                var companies = JsonConvert.DeserializeObject<TResponse>(response.Content);
+                return companies;
+            }
+            catch (Exception ex)
+            {
+                return default;
+            }
+        }
     }
 }

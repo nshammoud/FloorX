@@ -1,5 +1,5 @@
-﻿@using KQF.Floor.Web.Helpers
-@model CompanyApiResponse
+﻿@using KQF.Floor.Web.Models.BusinessCentralApi_Models
+@model GenericResponse<Company_Detail>
 @{
     ViewData["Title"] = "Home Page";
     var flags = ViewData["EnabledFlags"] as string[] ?? new string[] { };
@@ -37,29 +37,6 @@
             </div>
         }
 
-        @if (Model != null)
-        {
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Id</th>
-                        <th>Name</th>
-                        <th>Display Name</th>
-                    </tr>
-                </thead>
-                
-                <tbody>
-                    @foreach (var item in Model.Companies)
-                    {
-                        <tr>
-                            <td>@item.Id</td>
-                            <td>@item.Name</td>
-                            <td>@item.DisplayName</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        }
 
         @* @if (flags.Contains("material-mgmt"))
             {
