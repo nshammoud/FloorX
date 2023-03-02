@@ -65,14 +65,14 @@
                                 <ul class="dropdown-menu locationDropDown" aria-labelledby="dropdown06">
                                     @foreach (var l in ((ViewData["Locations"] as string[]) ?? new string[] { }))
                                     {
-                                        <li>
+                                        <li id="@l">
                                             <a class="dropdown-item" href="@Url.Action("SwitchTo", "Account", new
                                                                       {
                                                                           location = l,
                                                                           redirect = Context.Request.Path + Context.Request.QueryString
                                                                       })">@l</a>
-                                                    </li>
-                                    }
+                                                                </li>
+                                                            }
                                 </ul>
                             </li>
 
@@ -89,7 +89,20 @@
                                 <a class="nav-link " aria-current="page" href="@Url.Action("Index", "Output")">Outputs</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link " aria-current="page" href="@Url.Action("Index", "Lookup")">Lookup</a>
+                                @{
+                                    var companyId = Context.Session.GetString("CompanyID");
+                                    var location_Code = Context.Session.GetString("Location_Code");
+
+                                    if (!string.IsNullOrEmpty(companyId) && !string.IsNullOrEmpty(location_Code))
+                                    {
+                                        <a class="nav-link" aria-current="page" href="@Url.Action("Index", "Lookup")">Lookup</a>
+                                    }
+                                    else
+                                    {
+                                        <a class="nav-link " aria-current="page" href="#">Lookup</a>
+                                    }
+                                }
+
                             </li>
                             @if (flags.Contains("material-mgmt"))
                             {
@@ -260,6 +273,8 @@
         var companyId = '@Context.Session.GetString("CompanyID")';
 
         var isCompaniesLoading = false;
+
+         //NSH>>
         function loadCompanies() {
             var companies = $(".companiesList li");
 
@@ -272,6 +287,23 @@
             }
         }
 
+        //NSH>>
+        //$(document).ready(function () {
+        //    $("ul.companiesList").on("click", "li", function () {
+        //        Context.Session.SetString("CompanyID", $(this).attr("id"));
+        //    });
+        //});
+
+        $(document).ready(function () {
+            $("ul.locationDropDown").on("click", "li", function () {
+                $.post("/home/SaveLocationInSession?locationCode=" + $(this).attr("id")).done(function (isDone) {
+                    window.location.reload();
+                })
+            });
+        });
+        //NSH>>
+
+
         loadCompanies();
 
         if (companyId !== "") {
@@ -282,13 +314,16 @@
             $.get("/home/GetLocationsByCompanyId?companyId=" + companyId + "&jsonOnly=true", function (locations) {
                 $(".locationDropDown").empty();
                 $.each(locations.returnList, function () {
-                    var locationUlr = `/lookup?number=${this.code}`;
-                    $(".locationDropDown").append(`<li><a class="dropdown-item" href='${locationUlr}'>${this.code}</a></li>`);
+                    //var locationUlr = `/lookup?number=${this.code}`;
+                    //$(".locationDropDown").append(`<li><a class="dropdown-item" href='${locationUlr}'>${this.code}</a></li>`);
+                    $(".locationDropDown").append(`<li id=${this.code}><a class="dropdown-item">${this.code}</a></li>`);
                 })
             })
         }
+        //<<NSH
 
-        $(document).ready(() => {
+
+    $(document).ready(() => {
 
             setInterval(() => {
                 var m = new Date();
@@ -328,14 +363,12 @@
 
         });
 
-
         function clearEoDCache(){
             $.post( '@Url.Action("ClearEoD", "Home")', { }, (r)=>{
                 toastr.info("EoD Offset is " +  r + "s");
                 $("#EoD").text(r);
             })
         }
-
 
         function showJFHistoryModal(jobNo, source) {
             $("#jfHistoryBody").html("");

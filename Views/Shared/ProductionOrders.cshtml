@@ -1,4 +1,4 @@
-﻿@model IEnumerable<KQF.Floor.Web.Models.ProductionOrder>
+﻿@model IEnumerable<KQF.Floor.Web.Models.ProductionOrderBuissnessCentral>
 
 <style>
     .c {
@@ -70,32 +70,32 @@
 
         @foreach (var job in Model)
         {
-            <tr data-job-id="@job.JobNumber">
+            <tr data-job-id="@job.ProdOrderNo">
                 <td style="width:50px;">
-                    <button data-job-id="@job.JobNumber"
+                    <button data-job-id="@job.ProdOrderNo"
                             data-validate-every-output="@(job.ValidateEveryOutput ? "true" : "false")"
-                            data-job-date="@job.StartDate.ToString("G")"
+                            data-job-date="@job.StartingDate"
                             class="btn btn-outline-success btn-job-toggle"
                             onclick="selectJob(
-    '@job.JobNumber',
-    '@job.ItemNumber',
+    '@job.ProdOrderNo',
+    '@job.ItemNo',
     @String.Format("{0:0.00}", job.Quantity),
     @String.Format("{0:0.00}", job.FinishedQuantity),
-    '@job.UnitOfMeasure',
-    '@job.ScreenType',
-    '@job.ItemCategory',
-    '@(job.ShowStandardReporting? String.Format("Std Reporting Qty: {0:0.00} {1}", job.StandardReportingQty, job.StandardReportingUoM) : "")',
+    '@job.UnitofMeasureCode',
+    @*'@job.ScreenType',*@
+    '@job.ItemCategoryCode',
+    @*'@(job.ShowStandardReporting? String.Format("Std Reporting Qty: {0:0.00} {1}", job.StandardReportingQty, job.StandardReportingUoM) : "")',
     '@(job.ShowStandardReporting)',
     '@(job.StandardReportingQty)',
     '@(job.StandardReportingUoM)',
     @(job.CartOrContainerRequired ? "true" : "false"),
     '@(job.WorkCenter)',
-    '@(job.RequireMixerLine ? job.ResourceCaption : "")',
+    '@(job.RequireMixerLine ? job.ResourceCaption : "")',*@
     @(string.Format("{0:0.00}", job.RemainingQuantity)),
     @(job.EnableItemValidation ? "true" : "false"),
-    @String.Format("{0:0.0}", job.AllowedOverOutputPercent),
+    @*@String.Format("{0:0.0}", job.AllowedOverOutputPercent),*@
      @(job.AllowOverReportConsumption ? "true" : "false")
-    );">
+    )">
                         <i class="fa fa-chevron-right"></i>
                     </button>
                 </td>
@@ -105,27 +105,25 @@
                         @Newtonsoft.Json.JsonConvert.SerializeObject(job)
                         -->
                         <div class="fcol-1">
-                            <!-- @job.RequireMixerLine
-                            @job.ResourceCaption -->
-                            <a href="#" class="text-dark" onclick="showJFHistoryModal('@job.JobNumber', '@ViewData["ProductionOrderListSource"]');">
-                                @job.JobNumber <i class="fa fa-history"></i>
+                            <a href="#" class="text-dark" onclick="showJFHistoryModal('@job.ProdOrderNo', '@ViewData["ProductionOrderListSource"]');">
+                                @job.ProdOrderNo <i class="fa fa-history"></i>
                             </a>
                         </div>
-                        
-                        <div class="fcol-1">@job.ItemCategory</div>
-                        <div class="fcol-2">@job.ItemNumber </div>
-                        
+
+                        @*<div class="fcol-1">@job.ItemCategory</div>
+                        <div class="fcol-2">@job.ItemNumber </div>*@
+
                         @if (!hideOutputCols)
                         {
                             <div class="c fcol-1">@String.Format("{0:0.00}", job.Quantity)</div>
-                            <div class="c fcol-1">@job.UnitOfMeasure</div>
+                            @*<div class="c fcol-1">@job.UnitOfMeasure</div>*@
                             <div class="c fcol-1"> <div class="text-success border-success border-2"> @String.Format("{0:0.00}", job.FinishedQuantity) </div></div>
                         }
                     </div>
-                    
+
                     <div class="flex-row">
                         <div style="flex:@f1;">
-                            @job.StartDate.ToString("MM/dd/yy HH:mm")
+                            @job.StartingDate
                         </div>
                         <div style="flex:@f2;"> @job.ItemDescription</div>
                     </div>

@@ -1,108 +1,110 @@
-﻿@model LookupContainer
+﻿@model LookupContainer_
 
 <style>
     @@media only screen and (max-width: 500px) {
-        #card-header{
+        #card-header {
             font-size: .75rem;
         }
-        .card-title{
-            font-size:  .65rem;
-        }
-        .card-text{
-        font-size: .65rem;
-        }
-        .sub-header{
-            font-size:  .65rem;
-            font-weight: bolder;
-        }
-        .inner-card-text{
+
+        .card-title {
             font-size: .65rem;
         }
-     }
+
+        .card-text {
+            font-size: .65rem;
+        }
+
+        .sub-header {
+            font-size: .65rem;
+            font-weight: bolder;
+        }
+
+        .inner-card-text {
+            font-size: .65rem;
+        }
+    }
 </style>
 
 @{
-    var flat = Model.ItemCategories
-        .SelectMany(x => x.ContainerDetails, (a, b) => new { ItemCategory = a.Code, ItemCatDesc = a.Description, b.Regraded, b.ItemNo, ItemDesc = b.Description, b.LotInformation, })
-        .SelectMany(x => x.LotInformation, (a, b) => new { b.OnHold, a.ItemCategory, a.ItemCatDesc, a.Regraded, a.ItemNo, a.ItemDesc, b.ExpirationDate, b.LotNo, b.ProductionDate, b.Quantity, b.UnitOfMeasureBase, b.Sources })
-        .ToArray();
-
-    var prev = flat.FirstOrDefault();
-    prev = null;
+    var package = Model.ContainerLookupResults.Package;
 }
 
-@if (flat.Length > 0)
-
+@if (package.Length > 0)
 {
     <div class="text-end">
-        @await Html.PartialAsync("MoveMenu", new MoveMenuModel(Model.BinCode, Model.ContainerNo, null, null, null))
+        @await Html.PartialAsync("MoveMenu", new MoveMenuModel(package[0].BinCode, package[0].PackageNo, null, null, null))
     </div>
-@foreach (var i in flat.GroupBy(x => new { x.ItemCategory, x.ItemCatDesc, x.ItemNo, x.ItemDesc }).OrderBy(x => x.Key.ItemCategory).ThenBy(x => x.Key.ItemNo))
-{
-    <div class="card m-2 border-dark">
-        <div class="card-body">
-            <div id="card-header" class="d-flex flex-wrap row">
-                <h5 class="card-title fw-bold col-6">
-                    Category:
-                    <span class="fw-normal">@(i.Key.ItemCategory)</span>
-                </h5>
-                <p class="card-text fw-bold col-6">
-                    Description:
-                    <span class="fw-normal">@(i.Key.ItemCatDesc)</span>
-                </p>
-            </div>
-            <div id="card-header" class="d-flex flex-wrap row">
-                <p class="card-text fw-bold col-6">
-                    Item #:
-                    <span class="fw-normal">
-                        <a class="text-dark" href="@Url.Action("Index", new { number = i.Key.ItemNo })">@(i.Key.ItemNo) </a>
-                    </span>
-                </p>
-                <p class="card-text fw-bold col-6">
-                    Item Description:
-                    <span class="fw-normal">@(i.Key.ItemDesc)</span>
-                </p>
-            </div>
 
-            @foreach (var l in i.OrderBy(x => x.LotNo))
-            {
-                var exp = DateTime.TryParse(l.ExpirationDate, out DateTime e) ? e : DateTime.MinValue;
-                var onHold = l.OnHold.ToUpper() == "YES";
-                var isExp = exp < DateTime.Now;
+    @foreach (var p in package)
+    {
+        var IC = p.ItemCategory;
+        var PD = IC.PackageDetail;
+        var l = PD.LotInformation;
 
-                var css = onHold ? "alert alert-warning p-1" : "";
-                <div class="card col-12 border-success p-2 mb-1 @css">
-                    <div class="row">
-                        <div class="col-4 sub-header">Lot # @l.LotNo</div>
-                        <div class="col-4 sub-header">Qty: @l.Quantity @l.UnitOfMeasureBase</div>
-                        <div class=" col-4 sub-header @(isExp ? "alert alert-danger p-1" : "")">Expiration: @l.ExpirationDate</div>
-                        <div>
-                            
-                            @if (l.Regraded.StartsWith("Y"))
-                            {
-                                <span class="badge bg-danger">Regrade</span>
-                            }
-                            else
-                            {
-                               @* <span class="badge bg-dark">@l.Regraded.Substring(0, 1)</span>*@
-                            }
+                <div class="card m-2 border-dark">
+                    <div class="card-body">
+                        <div id="card-header" class="d-flex flex-wrap row">
+                            <h5 class="card-title fw-bold col-6">
+                                Category:
+                                <span class="fw-normal">@(p.ItemCategory)</span>
+                            </h5>
+                            <p class="card-text fw-bold col-6">
+                                Description:
+                                <span class="fw-normal">@(IC.ICC_Description)</span>
+                            </p>
                         </div>
-                        <div>
-                            @if (l.Sources != null && l.Sources.Length > 0)
-                            {
-                                var docNos = String.Join(", ", l.Sources.Select(x => String.Format("{0}: {1}", x.VendorName, x.DocumentNo)).ToArray());
-                                <span>@docNos</span>
-                            }
+                        <div id="card-header" class="d-flex flex-wrap row">
+                            <p class="card-text fw-bold col-6">
+                                Item #:
+                                <span class="fw-normal">
+                                    <a class="text-dark" href="@Url.Action("Index", new { number = PD.ItemNo })">@(PD.ItemNo) </a>
+                                </span>
+                            </p>
+                            <p class="card-text fw-bold col-6">
+                                Item Description:
+                                <span class="fw-normal">@(PD.Description)</span>
+                            </p>
                         </div>
-                    </div>
-                    <div class="text-end">
-                            @await Html.PartialAsync("MoveMenu", new MoveMenuModel(Model.BinCode, Model.ContainerNo, i.Key.ItemNo, l.LotNo, decimal.Parse(string.IsNullOrEmpty(l.Quantity) ? "0" : l.Quantity)))
+
+                        @{
+                            var exp = DateTime.TryParse(l.ExpirationDate, out DateTime e) ? e : DateTime.MinValue;
+                            var onHold = l.OnHold.ToUpper() == "YES";
+                            var isExp = exp < DateTime.Now;
+
+                            var css = onHold ? "alert alert-warning p-1" : "";
+                            <div class="card col-12 border-success p-2 mb-1 @css">
+                                <div class="row">
+                                    <div class="col-4 sub-header">Lot # @l.LotNo</div>
+                                    <div class="col-4 sub-header">Qty: @l.Quantity @l.UnitOfMeasureBase</div>
+                                    <div class=" col-4 sub-header @(isExp ? "alert alert-danger p-1" : "")">Expiration: @l.ExpirationDate</div>
+                                    <div>
+
+                                        @if (PD.Regraded.StartsWith("Y"))
+                                        {
+                                            <span class="badge bg-danger">Regrade</span>
+                                        }
+                                        else
+                                        {
+                                            @* <span class="badge bg-dark">@l.Regraded.Substring(0, 1)</span>*@
+                                        }
+                                    </div>
+                                    @*<div>
+                                            //NSH Commented out code
+                                            @if (l.Sources != null && l.Sources.Length > 0)
+                                            {
+                                                var docNos = String.Join(", ", l.Sources.Select(x => String.Format("{0}: {1}", x.VendorName, x.DocumentNo)).ToArray());
+                                                <span>@docNos</span>
+                                            }
+                                        </div>*@
+                                </div>
+                                <div class="text-end">
+                                    @await Html.PartialAsync("MoveMenu", new MoveMenuModel(p.BinCode, p.PackageNo, PD.ItemNo, l.LotNo, decimal.Parse(string.IsNullOrEmpty(l.Quantity.ToString()) ? "0" : l.Quantity.ToString())))
+                                </div>
+                            </div>
+                        }
                     </div>
                 </div>
-            }
-        </div>
-    </div>
-}}
+    }}
 else
 {
     <div class="alert alert-warning">

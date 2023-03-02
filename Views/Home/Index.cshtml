@@ -1,4 +1,5 @@
 ﻿@using KQF.Floor.Web.Models.BusinessCentralApi_Models
+@using Microsoft.AspNetCore.Http;
 @model GenericResponse<Company_Detail>
 @{
     ViewData["Title"] = "Home Page";
@@ -22,10 +23,25 @@
             </a>
         </div>
         <div class="col-sm-6 col-md-4 col-lg-2 mb-3">
-            <a href="@Url.Action("Index", "Lookup")" class="btn btn-lg btn-secondary text-center w-100 h-100 pt-5 pb-5">
-                <i class="gg-search-found" style="margin: 20px auto; --ggs:3;"></i>
-                Lookups
-            </a>
+            @{
+                var companyId = Context.Session.GetString("CompanyID");
+                var location_Code = Context.Session.GetString("Location_Code");
+
+                if (!string.IsNullOrEmpty(companyId) && !string.IsNullOrEmpty(location_Code))
+                {
+                    <a href="@Url.Action("Index", "Lookup")" class="btn btn-lg btn-secondary text-center w-100 h-100 pt-5 pb-5">
+                        <i class="gg-search-found" style="margin: 20px auto; --ggs:3;"></i>
+                        Lookups
+                    </a>
+                }
+                else
+                {
+                    <a href="#" disabled="disabled" class="btn btn-lg btn-secondary text-center w-100 h-100 pt-5 pb-5">
+                        <i class="gg-search-found" style="margin: 20px auto; --ggs:3;"></i>
+                        Lookups
+                    </a>
+                }
+            }
         </div>
         @if (flags.Contains("material-mgmt"))
         {

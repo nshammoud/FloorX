@@ -1,24 +1,29 @@
-﻿@model LookupItemResult
+﻿@*@model LookupItemResult*@
+@model LookupItem_
 
 <style>
     @@media only screen and (max-width: 500px) {
-        #card-header{
+        #card-header {
             font-size: .75rem;
         }
-        .card-title{
-            font-size:  .65rem;
-        }
-        .card-text{
-        font-size: .65rem;
-        }
-        .sub-header{
-            font-size:  .65rem;
-            font-weight: bolder;
-        }
-        .inner-card-text{
+
+        .card-title {
             font-size: .65rem;
         }
-     }
+
+        .card-text {
+            font-size: .65rem;
+        }
+
+        .sub-header {
+            font-size: .65rem;
+            font-weight: bolder;
+        }
+
+        .inner-card-text {
+            font-size: .65rem;
+        }
+    }
 </style>
 
 <div class="card m-2 border-dark">
@@ -26,21 +31,21 @@
         <div id="card-header" class="d-flex flex-wrap row">
             <h5 class="card-title fw-bold col-6">
                 Item #:
-                <span class="fw-normal">@Model.ItemNo</span>
+                <span class="fw-normal">@Model.ItemLookupResults.Item.ItemNo</span>
             </h5>
             <p class="card-text fw-bold col-6">
                 Item Description:
-                <span class="fw-normal">@Model.ItemDescription</span>
+                <span class="fw-normal">@Model.ItemLookupResults.Item.Description</span>
             </p>
             <p class="card-text fw-bold col-6">
                 Location:
-                <span class="fw-normal"> @String.Join(", ", Model.WarehouseEntries.Select(x => x.Location).Distinct().ToArray())</span>
+                <span class="fw-normal"> @String.Join(", ", Model.ItemLookupResults.Item.WarehouseEntry.Select(x => x.Location).Distinct().ToArray())</span>
             </p>
         </div>
     </div>
     <div class="d-flex flex-column flex-wrap align-content-center">
         @{
-            var whs = Model.WarehouseEntries.ToList();
+            var whs = Model.ItemLookupResults.Item.WarehouseEntry.ToList();
         }
         @if (whs.Count > 0)
         {
@@ -68,7 +73,7 @@
                             <div class="col-4 sub-header">Location: <span class="fw-normal">@wh.Location</span></div>
                         </div>
                         <div class="text-end">
-                            @await Html.PartialAsync("MoveMenu", new MoveMenuModel(wh.Bin, wh.ContainerNo, Model.ItemNo, wh.LotNo, decimal.Parse(string.IsNullOrEmpty(wh.Quantity) ? "0" : wh.Quantity)))
+                            @await Html.PartialAsync("MoveMenu", new MoveMenuModel(wh.Bin, wh.ContainerNo, Model.ItemLookupResults.Item.ItemNo, wh.LotNo, decimal.Parse(string.IsNullOrEmpty(wh.Quantity) ? "0" : wh.Quantity)))
                         </div>
                     </div>
                 }

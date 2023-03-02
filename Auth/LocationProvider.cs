@@ -89,7 +89,9 @@ namespace KQF.Floor.Web.Auth
 
                 if (!val.HasValue)
                 {
+
                     var results = _locationListClient.ReadAsync(CurrentLocation).GetAwaiter().GetResult();
+
                     if (results?.MWSLocationList != null)
                     {
                         

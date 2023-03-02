@@ -1,19 +1,15 @@
 using KQF.Floor.NavServices.ProductionOrders;
 using KQF.Floor.NavServices;
-using KQF.Floor.Web.Auth;
-using KQF.Floor.Web.Auth.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using KQF.Floor.Web.NavServices;
 using KQF.Floor.Web.NavServices.ProductionMgmt;
 using KQF.Floor.Web.NavServices.WarehouseEmployees;
@@ -33,14 +29,10 @@ using KQF.Floor.Web.NavServices.WarehouseEmployeesPage;
 using KQF.Floor.Web.NavServices.MoveContainerMgm;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authentication;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text.Json;
 using KQF.Floor.Web.Helpers;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
-using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
-using System.IdentityModel.Tokens.Jwt;
+using KQF.Floor.Web.Models.BusinessCentralApi_Models;
 
 namespace KQF.Floor.Web
 {
@@ -72,6 +64,7 @@ namespace KQF.Floor.Web
             services.Configure<UIConfiguration>(Configuration.GetSection("UI"));
             services.Configure<FeatureFlagConfiguration>(Configuration.GetSection("FeatureFlags"));
             services.Configure<LoginBaseSettingConfig>(Configuration.GetSection("LoginBaseConfig"));
+            services.Configure<BusinessCentralApis>(Configuration.GetSection("BusinessCentralApis"));
 
             services.AddScoped<Auth.Services.IAuthenticationService, Auth.Services.LdapAuthenticationService>();
             services.AddTransient<IAuthorizationHandler, Auth.ClaimsHandling.LocationClaimsHandler>();
@@ -134,7 +127,6 @@ namespace KQF.Floor.Web
                         {
                             //var jwt = new JwtSecurityTokenHandler().ReadJwtToken(context.TokenEndpointResponse.IdToken);
                             var claims = context.SecurityToken.Claims;
-
                             var identity = new ClaimsIdentity(CookieAuthenticationDefaults.AuthenticationScheme);
                             foreach (var claim in claims)
                             {
@@ -149,7 +141,6 @@ namespace KQF.Floor.Web
                             }
 
                             identity.AddClaim(new Claim("refresh_token", refresh_token));
-
                             var settings = Configuration.GetSection("LoginBaseConfig").Get<LoginBaseSettingConfig>();
                             var tokenResponse = new BusinessCentralApiHelper(settings).GetToken(refresh_token);
                             if(tokenResponse != null)
@@ -167,6 +158,7 @@ namespace KQF.Floor.Web
                 };
             });
 
+            // tested but have issues so changed into ODIC....
             //.AddMicrosoftAccount(options =>
             //{
             //    options.SignInScheme = CookieAuthenticationDefaults.AuthenticationScheme;

@@ -3,7 +3,7 @@
 
 @foreach (var company in Model.ReturnList)
 {
-    <li>
+    <li id="@company.Id">
         <a class="dropdown-item" href="~/home?companyId=@company.Id">
             @company.Name
         </a>

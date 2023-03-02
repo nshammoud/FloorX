@@ -7,7 +7,6 @@ namespace KQF.Floor.Web.Models
         public string SearchTerm { get; set; }
         public List<LookupResult> Results { get; set; }
 
-        public Models.BusinessCentralApi_Models.BinLookup LookupResults { get; set; }
     }
 
     public abstract class LookupResult
@@ -17,7 +16,26 @@ namespace KQF.Floor.Web.Models
         public string Description { get; set; }
         public string LocationCode { get; set; }
     }
-    
+
+    public class LookupBin_ : LookupResult
+    {
+        public string BinCode { get; set; }
+        public Models.BusinessCentralApi_Models.BinLookup BinLookupResults { get; set; }
+    }
+
+    public class LookupItem_ : LookupResult
+    {
+        public string ItemNo { get; set; }
+        public Models.BusinessCentralApi_Models.ItemLookup ItemLookupResults { get; set; }
+    }
+
+    public class LookupContainer_ : LookupResult
+    {
+        public string PackageNo { get; set; }
+        public Models.BusinessCentralApi_Models.PackageLookup ContainerLookupResults { get; set; }
+    }
+
+
     public class LookupBin : LookupResult
     {
         public string BinCode { get; set; }

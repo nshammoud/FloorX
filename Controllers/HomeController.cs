@@ -45,6 +45,10 @@ namespace KQF.Floor.Web.Controllers
             {
                 HttpContext.Session.SetString("CompanyID", companyId);
             }
+            else
+            {
+                HttpContext.Session.SetString("CompanyID", _businessApis.Value.DefaultCompanyId);
+            }
             return View();
         }
 
@@ -53,35 +57,38 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.Companies}";
-                var companies = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Company_Detail>>(apiUrl);
-                HttpContext.Session.SetString("CompaniesList", JsonConvert.SerializeObject(companies));
-                return PartialView("_CompaniesList", companies);
+
+                var sessionStoredCompanies = HttpContext.Session.GetString("CompaniesList");
+                if (!string.IsNullOrEmpty(sessionStoredCompanies))
+                {
+                    var companies = JsonConvert.DeserializeObject<GenericResponse<Company_Detail>>(sessionStoredCompanies);
+                    return PartialView("_CompaniesList", companies);
+                }
+                else
+                {
+                    var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.Companies}";
+                    var companies = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Company_Detail>>(apiUrl);
+                    HttpContext.Session.SetString("CompaniesList", JsonConvert.SerializeObject(companies));
+                    return PartialView("_CompaniesList", companies);
+                }
             }
             catch (Exception ex)
             {
                 ModelState.AddModelError("", ex.Message);
                 return View();
             }
-
-            //var sessionStoredCompanies = HttpContext.Session.GetString("CompaniesList");
-            //if (!string.IsNullOrEmpty(sessionStoredCompanies))
-            //{
-            //    var companies = JsonConvert.DeserializeObject<GenericResponse<Company_Detail>>(sessionStoredCompanies);
-            //    return PartialView("_CompaniesList", companies);
-            //}
-            //else
-            //{
-            //    var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.Companies}";
-            //    var companies = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Company_Detail>>(apiUrl);
-            //    HttpContext.Session.SetString("CompaniesList", JsonConvert.SerializeObject(companies));
-            //    return PartialView("_CompaniesList", companies);
-            //}
         }
 
         public IActionResult Locations()
         {
             return View();
+        }
+
+        [HttpPost]
+        public IActionResult SaveLocationInSession(string locationCode)
+        {
+            HttpContext.Session.SetString("Location_Code", locationCode);
+            return Json(true);
         }
 
         [HttpGet]

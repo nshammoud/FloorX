@@ -29,20 +29,14 @@
     </div>
     <div class="row">
         <div class="col-12">
-            @if (Model.Results.Count == 0 && Model.LookupResults.Bin == null && !String.IsNullOrEmpty(Model.SearchTerm))
+            @if (ViewBag.SearchInputEmpty == true)
             {
-                @if (ViewBag.lookupResults != null)
-                {
-                    <div>
-                        @JsonConvert.DeserializeObject(ViewBag.lookupResults);
-                    </div>
-                }
                 <div class="col-md-4 offset-md-4 alert alert-info text-center">No Results for <strong>@Model.SearchTerm</strong></div>
             }
             else
             {
                 <div class="accordion" id="results">
-                    @if (Model.LookupResults.Bin.Length > 0)
+                    @*@if (Model.LookupResults.Bin.Length > 0)
                     {
                         <table class="table table-bordered">
                             <thead>
@@ -61,7 +55,7 @@
                                 }
                             </tbody>
                         </table>
-                    }
+                    }*@
 
                     @foreach (var r in Model.Results)
                     {
@@ -121,6 +115,7 @@
 
 @section scripts{
     <script type="text/javascript">
+
         $(document).ready(() => {
             $("#txtLookup").focus();
 
@@ -129,6 +124,20 @@
                     lookup();
                 }
             });
+
+
+            var companyId = '@TempData["companyId"]';
+            var locationCode = '@TempData["locationCode"]';
+
+            if (companyId === "") {
+                alert("Please select company");
+                return;
+            }
+
+            if (locationCode === "") {
+                alert("Please select location");
+                return;
+            }
 
         });
 

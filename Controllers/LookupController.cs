@@ -47,9 +47,34 @@ namespace KQF.Floor.Web.Controllers
             _businessApis = businessApis;
         }
 
-        public async Task<IActionResult> Index(string number)
+        public async Task<IActionResult> Index_Obselete(string number)
         {
+            if (!string.IsNullOrEmpty(number))
+            {
+                var model = await DoLookup(number);
+                return View(model);
+            }
+            else
+            {
+                return View(new LookupModel() { SearchTerm = "", Results = new List<LookupResult>() });
+            }
+
+        }
+
+        public async Task<IActionResult> Index_NSH(string number)
+        {
+            if (!string.IsNullOrEmpty(number))
+            {
+                HttpContext.Session.SetString("Location_Code", number);
+            }
+
+            if (string.IsNullOrEmpty(number))
+            {
+                number = HttpContext.Session.GetString("Location_Code");
+            }
+
             ViewBag.code = number;
+
             var lookupModel = new LookupModel
             {
                 Results = new List<LookupResult>()
@@ -63,8 +88,9 @@ namespace KQF.Floor.Web.Controllers
                 catch (Exception)
                 {
                 }
+
                 var companyId = HttpContext.Session.GetString("CompanyID");
-                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.LookupManagementBin}";
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.LookupManagement}";
                 apiUrl = string.Format(apiUrl, companyId);
                 var obj = new
                 {
@@ -82,20 +108,27 @@ namespace KQF.Floor.Web.Controllers
                         using (TextReader reader = new StringReader(lookupResults.ReturnList))
                         {
                             var result = (Models.BusinessCentralApi_Models.BinLookup)serializer.Deserialize(reader);
-                            lookupModel.LookupResults = result;
+                            //lookupModel.LookupResults = result;
                             if (result.Bin != null)
                             {
                                 lookupModel.SearchTerm = number;
                             }
                             else
                             {
-                                result.Bin = new List<Models.BusinessCentralApi_Models.BinLookupBin>().ToArray();
+                                //result.Bin = new List<Models.BusinessCentralApi_Models.BinLookupBin>().ToArray();
                             }
                         }
                     }
                     catch (Exception ex)
                     {
                     }
+                }
+                else
+                {
+                    //lookupModel.LookupResults = new Models.BusinessCentralApi_Models.BinLookup
+                    //{
+                    //    Bin = new List<BinLookupBin>().ToArray()
+                    //};
                 }
                 return View(lookupModel);
             }
@@ -105,6 +138,50 @@ namespace KQF.Floor.Web.Controllers
             }
         }
 
+        public async Task<IActionResult> Index(string number)
+        {
+
+            ViewBag.code = number;
+            var companyId = HttpContext.Session.GetString("CompanyID");
+            var locationCode = HttpContext.Session.GetString("Location_Code");
+            TempData["companyId"] = companyId;
+            TempData["locationCode"] = locationCode;
+
+            if (string.IsNullOrEmpty(number))
+            {
+                ViewBag.SearchInputEmpty = true;
+                var model = new LookupModel();
+                return View(model);
+            }
+
+
+            var lookupModel = new LookupModel
+            {
+                Results = new List<LookupResult>()
+            };
+            if (!string.IsNullOrEmpty(number))
+            {
+                try
+                {
+                    lookupModel = await DoLookup(number);
+                }
+                catch (Exception)
+                {
+                }
+
+                return View(lookupModel);
+            }
+            else
+            {
+                var model = new LookupModel
+                {
+                    SearchTerm = number,
+                    Results = new List<LookupResult>(),
+                    //LookupResults = new Models.BusinessCentralApi_Models.BinLookup()
+                };
+                return View(model);
+            }
+        }
 
         public async Task<LookupModel> DoLookup(string number)
         {
@@ -114,67 +191,186 @@ namespace KQF.Floor.Web.Controllers
                 Results = new List<LookupResult>()
             };
 
-            //lookup everything
-            var binResults = await _lookupClient.BinLookupAsync(new BinLookup1()
-            {
-                pLocation = _locationProvider.CurrentLocation.ToUpper(),
+            var currentLocation = HttpContext.Session.GetString("Location_Code");
 
+            //lookup everything .. look up bin, items, containers (packages).
+            //https://api.businesscentral.dynamics.com/v2.0/sandboxAPITest/api/kqf/kqfFloor/v2.0/companies(a2db7307-078b-ed11-aad8-000d3a21edc2)/lookupManagement(971c94c3-d1b0-ed11-9a88-0022485317e7)/Microsoft.NAV.binLookup
+            var companyId = HttpContext.Session.GetString("CompanyID");
+            var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.LookupManagement}";
+            var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.binLookup");
+            var obj = new
+            {
+                pLocation = string.Empty,
                 pBinCode = number,
-                pBinLookupXML = new Web.NavServices.Lookup.BinLookup()
-                {
-                    Bin = new Bin[] { },
-                    Text = new string[] { }
-                },
-                pItemNo = "",
-                pLotNo = ""
-            });
-            var bins = binResults.pBinLookupXML?.Bin?.Where(x => x.LocationCode.ToUpper() == _locationProvider.CurrentLocation.ToUpper()).ToArray();
-            var itemResults = await _lookupClient.ItemLookupAsync(new ItemLookup1()
+                pItemNo = string.Empty,
+                pLotNo = string.Empty
+            };
+
+            var lookupResults = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
+            var serializer = new XmlSerializer(typeof(Models.BusinessCentralApi_Models.BinLookup));
+            Models.BusinessCentralApi_Models.BinLookup binResults2 = null;
+            var LookupBin_ = new LookupBin_();
+
+            using (TextReader reader = new StringReader(lookupResults.ReturnList))
             {
-                pBin = "",
-                pItemLookup = new ItemLookup()
-                {
-                },
-                pItemNo = number,
-                pLocation = _locationProvider.CurrentLocation.ToUpper(),
-                pLotNo = ""
-            });
-
-
-            var items = itemResults.pItemLookup.Item?.Where(x => !string.IsNullOrEmpty(x.ItemNo)).ToArray();
-
-
-            var containerResults = await _lookupClient.ContainerLookupAsync(new ContainerLookup1()
-            {
-                pContainerNo = number,
-                pContainerLookupXML = new ContainerLookup()
-                {
-                    Container = new Container[] { },
-                    Text = new string[] { }
+                binResults2 = (Models.BusinessCentralApi_Models.BinLookup)serializer.Deserialize(reader);
+                LookupBin_.BinLookupResults = binResults2;
+                if (LookupBin_.BinLookupResults.Bin != null) {
+                    LookupBin_.ResultType = "Bin";
+                    LookupBin_.Title = LookupBin_.BinLookupResults.Bin.BinCode;
+                    model.Results.Add(LookupBin_);
                 }
-            });
-            var containers = containerResults.pContainerLookupXML?.Container?.Where(x => x.LocationCode.ToUpper() == _locationProvider.CurrentLocation.ToUpper()).ToArray();
-
-            //map results
-            if ((bins?.Length ?? 0) > 0)
-            {
-                model.Results.AddRange(_mapper.Map<Bin[], LookupBin[]>(bins));
             }
 
-            if ((containers?.Length ?? 0) > 0)
+            //// here is the second API. 
+            ////https://api.businesscentral.dynamics.com/v2.0/sandboxAPITest/api/kqf/kqfFloor/v2.0/companies(a2db7307-078b-ed11-aad8-000d3a21edc2)/lookupManagement(971c94c3-d1b0-ed11-9a88-0022485317e7)/Microsoft.NAV.itemLookup
+            var itemLookupApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.itemLookup");
+            var objItemLookUp = new
             {
-                model.Results.AddRange(_mapper.Map<Container[], LookupContainer[]>(containers));
+                pItemNo = number,
+                pLocation = currentLocation,
+                pBin = string.Empty,
+                pLotNo = string.Empty
+            };
+
+            var itemLookupResults = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(itemLookupApiUrl, objItemLookUp);
+            var serializer1 = new XmlSerializer(typeof(Models.BusinessCentralApi_Models.ItemLookup));
+
+            Models.BusinessCentralApi_Models.ItemLookup ItemResults2 = null;
+            var LookupItem_ = new LookupItem_();
+            using (TextReader reader2 = new StringReader(itemLookupResults.ReturnList))
+            {
+                ItemResults2 = (Models.BusinessCentralApi_Models.ItemLookup)serializer1.Deserialize(reader2);
+                LookupItem_.ItemLookupResults = ItemResults2;
+                if (!String.IsNullOrEmpty(LookupItem_.ItemLookupResults.Item.ItemNo))
+                {
+                    LookupItem_.ResultType = "Item";
+                    LookupItem_.Title = LookupItem_.ItemLookupResults.Item.ItemNo;
+                    model.Results.Add(LookupItem_);
+                }
             }
 
-            if ((items?.Length ?? 0) > 0)
+            //// below is 3rd API 
+            ////https://api.businesscentral.dynamics.com/v2.0/sandboxAPITest/api/kqf/kqfFloor/v2.0/companies(a2db7307-078b-ed11-aad8-000d3a21edc2)/lookupManagement(971c94c3-d1b0-ed11-9a88-0022485317e7)/Microsoft.NAV.packageLookup
+
+            var packageLookupApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.packageLookup");
+            var objpackageLookup = new
             {
-                model.Results.AddRange(_mapper.Map<Item1[], LookupItemResult[]>(items));
+                pPackageNo = number
+            };
+
+            var packageLookupResults = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(packageLookupApiUrl, objpackageLookup);
+            var serializer2 = new XmlSerializer(typeof(Models.BusinessCentralApi_Models.PackageLookup));
+
+            Models.BusinessCentralApi_Models.PackageLookup ContainerResult = null;
+            var LookupContainer_ = new LookupContainer_();
+            using (TextReader reader2 = new StringReader(packageLookupResults.ReturnList))
+            {
+                ContainerResult = (Models.BusinessCentralApi_Models.PackageLookup)serializer2.Deserialize(reader2);
+                LookupContainer_.ContainerLookupResults = ContainerResult;
+                if (LookupContainer_.ContainerLookupResults.Package != null)
+                {
+                    LookupContainer_.ResultType = "Container";
+                    LookupContainer_.Title = LookupContainer_.ContainerLookupResults.Package[0].PackageNo;
+                    model.Results.Add(LookupContainer_);
+                }
             }
 
+
+
+            #region commented Old Code
+            //Old Code 
+            //var binResults = await _lookupClient.BinLookupAsync(new BinLookup1()
+            //{
+            //    pLocation = _locationProvider.CurrentLocation.ToUpper(),
+
+            //    pBinCode = number,
+            //    pBinLookupXML = new Web.NavServices.Lookup.BinLookup()
+            //    {
+            //        Bin = new Bin[] { },
+            //        Text = new string[] { }
+            //    },
+            //    pItemNo = "",
+            //    pLotNo = ""
+            //});
+
+            //// below retrun result is filtered by current location slected. 
+            //var bins = binResults.pBinLookupXML?.Bin?.Where(x => x.LocationCode.ToUpper() == _locationProvider.CurrentLocation.ToUpper()).ToArray();
+
+            //var bins2 = binResults2.Bin?.Where(x => x.LocationCode.ToUpper() == currentLocation.ToUpper()).ToArray();
+
+            //// here is the second API. 
+            ////https://api.businesscentral.dynamics.com/v2.0/sandboxAPITest/api/kqf/kqfFloor/v2.0/companies(a2db7307-078b-ed11-aad8-000d3a21edc2)/lookupManagement(971c94c3-d1b0-ed11-9a88-0022485317e7)/Microsoft.NAV.itemLookup
+
+            //var itemLookupApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.itemLookup");
+
+            //var objItemLookUp = new
+            //{
+            //    pItemNo = number,
+            //    pLocation = currentLocation,
+            //    pBin = string.Empty,
+            //    pLotNo = string.Empty
+            //};
+            //var itemLookupResults = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(itemLookupApiUrl, objItemLookUp);
+
+            //var itemResults = await _lookupClient.ItemLookupAsync(new ItemLookup1()
+            //{
+            //    pBin = "",
+            //    pItemLookup = new ItemLookup()
+            //    {
+            //    },
+            //    pItemNo = number,
+            //    pLocation = _locationProvider.CurrentLocation.ToUpper(),
+            //    pLotNo = ""
+            //});
+
+
+            //var items = itemResults.pItemLookup.Item?.Where(x => !string.IsNullOrEmpty(x.ItemNo)).ToArray();
+
+            //// below is 3rd API 
+            ////https://api.businesscentral.dynamics.com/v2.0/sandboxAPITest/api/kqf/kqfFloor/v2.0/companies(a2db7307-078b-ed11-aad8-000d3a21edc2)/lookupManagement(971c94c3-d1b0-ed11-9a88-0022485317e7)/Microsoft.NAV.packageLookup
+
+            //var packageLookupApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.packageLookup");
+            //var objpackageLookup = new
+            //{
+            //    pPackageNo = number
+            //};
+
+            //var packageLookupResults = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(packageLookupApiUrl, objpackageLookup);
+
+            //var containerResults = await _lookupClient.ContainerLookupAsync(new ContainerLookup1()
+            //{
+            //    pContainerNo = number,
+            //    pContainerLookupXML = new ContainerLookup()
+            //    {
+            //        Container = new Container[] { },
+            //        Text = new string[] { }
+            //    }
+            //});
+            //var containers = containerResults.pContainerLookupXML?.Container?.Where(x => x.LocationCode.ToUpper() == _locationProvider.CurrentLocation.ToUpper()).ToArray();
+
+            ////map results
+            //// here are added all into a list.
+            //// we need to try not to change below mapping 
+            //if ((bins?.Length ?? 0) > 0)
+            //{
+            //    model.Results.AddRange(_mapper.Map<Bin[], LookupBin[]>(bins));
+            //}
+
+            //if ((containers?.Length ?? 0) > 0)
+            //{
+            //    model.Results.AddRange(_mapper.Map<Container[], LookupContainer[]>(containers));
+            //}
+
+            //if ((items?.Length ?? 0) > 0)
+            //{
+            //    model.Results.AddRange(_mapper.Map<Item1[], LookupItemResult[]>(items));
+            //}
+            #endregion
+            // lastly return model
             return model;
 
         }
-
 
         [HttpPost]
         public async Task<IActionResult> JobHistory(JobHistoryArgs args)

@@ -2,6 +2,7 @@
 using KQF.Floor.Web.Configuration;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -104,9 +105,10 @@ namespace KQF.Floor.Web.Controllers
 
         public async Task<IActionResult> Logout()
         {
-
             await HttpContext.SignOutAsync();
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
+            //return Redirect("https://login.microsoftonline.com/common/oauth2/v2.0/logout");
             return RedirectToAction(nameof(Login));
         }
 

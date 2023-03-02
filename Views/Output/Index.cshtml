@@ -204,6 +204,18 @@
             $("#ValidateItemInput").on("keydown", onItemValidationInputKeyDown);
 
 
+            var companyId = '@TempData["companyId"]';
+            var locationCode = '@TempData["locationCode"]';
+
+            if (companyId === "") {
+                alert("Please select company");
+                return;
+            }
+
+            if (locationCode === "") {
+                alert("Please select location");
+                return;
+            }
 
             loadJobs('@Model.ToString("yyyy-MM-dd")');
 

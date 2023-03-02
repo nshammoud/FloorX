@@ -1,13 +1,17 @@
 ﻿using AutoMapper;
 using KQF.Floor.NavServices.ProductionOrders;
 using KQF.Floor.Web.Configuration;
+using KQF.Floor.Web.Helpers;
 using KQF.Floor.Web.Models;
+using KQF.Floor.Web.Models.BusinessCentralApi_Models;
 using KQF.Floor.Web.NavServices.ProductionMgmt;
 using KQF.Floor.Web.NavServices.WCResources;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +26,9 @@ namespace KQF.Floor.Web.Controllers
         private readonly ProductionMgmtClient _prodMgmtClient;
         private readonly WCResourcesClient _mixerClient;
         private readonly IMapper _mapper;
+        private readonly IOptions<LoginBaseSettingConfig> _loginApiConfig;
+        private readonly IOptions<BusinessCentralApis> _businessApis;
+        private readonly IOptions<LoginBaseSettingConfig> _config;
 
         public OutputController(
             ProductionOrderClient poClient,
@@ -32,13 +39,15 @@ namespace KQF.Floor.Web.Controllers
             ILogger<OutputController> logger,
             Services.UserSettingsService userSettingsService,
             FeatureFlagProvider featureFlags,
-            Auth.LocationProvider locationProvider) : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags)
+            Auth.LocationProvider locationProvider, IOptions<LoginBaseSettingConfig> loginApiConfig,
+            IOptions<BusinessCentralApis> businessApis) : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags)
         {
             _productOrders = poClient;
             _prodMgmtClient = mgClient;
             _mapper = mapper;
             _mixerClient = mixerClient;
-
+            _loginApiConfig = loginApiConfig;
+            _businessApis = businessApis;
         }
 
         public DateTime CurrentDate
@@ -69,6 +78,10 @@ namespace KQF.Floor.Web.Controllers
                 CurrentDate = dateFilter.Value;
             }
 
+            var companyId = HttpContext.Session.GetString("CompanyID");
+            var locationCode = HttpContext.Session.GetString("Location_Code");
+            TempData["companyId"] = companyId;
+            TempData["locationCode"] = locationCode;
             return View(date);
         }
 
@@ -98,36 +111,85 @@ namespace KQF.Floor.Web.Controllers
             {
                 CurrentDate = date.Value;
             }
+            var apiHelper = new BusinessCentralApiHelper(_loginApiConfig.Value, HttpContext);
+            var companyId = HttpContext.Session.GetString("CompanyID");
+            var locationCode = HttpContext.Session.GetString("Location_Code");
+            var startingDate = CurrentDate.ToString("yyyy-MM-dd");
+            var ordersApi = string.Format(_businessApis.Value.productionOrderList, companyId);
+            var apiUrl = $"{_businessApis.Value.BaseUrl}{ordersApi}";
+            var ordersList = apiHelper.GetApiResponse<GenericResponse<ProductionOrderBuissnessCentral>>(apiUrl);
 
-            Floor.NavServices.ProductionOrders.ReadMultiple_Result results;
-            var today = (date ?? DateTime.Now).ToString("MMddyyyy");
-            var yesterday = (date ?? DateTime.Now).AddDays(-1).ToString("MMddyyyy");
+            //Floor.NavServices.ProductionOrders.ReadMultiple_Result results;
+            var today = (date ?? DateTime.Now).ToString("yyyy-MM-dd");
+            var yesterday = (date ?? DateTime.Now).AddDays(-1).ToString("yyyy-MM-dd");
 
-            var shiftChange = CurrentDate.AddSeconds(_locationProvider.LocationDayOffsetInSeconds);
+            //var shiftChange = CurrentDate.AddSeconds(_locationProvider.LocationDayOffsetInSeconds);
+            
+            //>>NSH
+            var sessionStoredCompanies = HttpContext.Session.GetString("LocationsList_" + companyId);
+            var locations = new GenericResponse<Location>();
+
+            if (!string.IsNullOrEmpty(sessionStoredCompanies))
+            {
+                locations = JsonConvert.DeserializeObject<GenericResponse<Location>>(sessionStoredCompanies);
+            }
+            else
+            {
+                var locationApi = string.Format(_businessApis.Value.Location, companyId);
+                var apiUrl_ = $"{_businessApis.Value.BaseUrl}{locationApi}";
+                locations = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Location>>(apiUrl);
+                HttpContext.Session.SetString($"LocationsList_{companyId}", JsonConvert.SerializeObject(locations));
+            }
+
+            //>>NSH
+
+            var list_ = locations.ReturnList;
+            var locationItem = new Location();
+            if (list_ != null && !string.IsNullOrEmpty(locationCode))
+            {
+                locationItem = list_.FirstOrDefault(x => x.Code.Contains(locationCode));
+            }
+
+
+            var shiftChange = CurrentDate.AddSeconds(Convert.ToDouble(locationItem.EndOfDayOffset));
+
+
             var showPreviousDay = DateTime.Now <= shiftChange;
+            var criteria = showPreviousDay ? $"{yesterday}..{today}" : $"{today}";
 
-            results = await _productOrders.ReadMultipleAsync(new MWSProductionOrderListV2_Filter[] {
-                 new MWSProductionOrderListV2_Filter()
-                {
-                    Field = MWSProductionOrderListV2_Fields.Starting_Date,
-                    Criteria = showPreviousDay ? $"{yesterday}..{today}" : $"={today}"
-                },
-                
-                new MWSProductionOrderListV2_Filter()
-                {
-                    Field = MWSProductionOrderListV2_Fields.Location_Code,
-                    Criteria = $"={CurrentLocation.ToUpper()}"
-                }
-            }, "", 500);
+            //results = await _productOrders.ReadMultipleAsync(new MWSProductionOrderListV2_Filter[] {
+            //     new MWSProductionOrderListV2_Filter()
+            //    {
+            //        Field = MWSProductionOrderListV2_Fields.Starting_Date,
+            //        Criteria = showPreviousDay ? $"{yesterday}..{today}" : $"={today}"
+            //    },
 
-            var wh = User.GetWarehouseRecords(WarehouseRecordType.Output);
-            var iccs = wh.Where(x => x.Location.ToLower() == CurrentLocation.ToLower()).Select(x => x.ItemCategory.ToLower()).ToArray();
+            //    new MWSProductionOrderListV2_Filter()
+            //    {
+            //        Field = MWSProductionOrderListV2_Fields.Location_Code,
+            //        Criteria = $"={CurrentLocation.ToUpper()}"
+            //    }
+            //}, "", 500);
 
-            var models = _mapper.Map<Models.ProductionOrder[]>(results.ReadMultiple_Result1)
-                .Where(x => iccs.Contains(x.ItemCategory.ToLower()))
-                 .OrderBy(x => x.StartDate)
-                .ToArray();
-            return PartialView(models);
+            //var wh = User.GetWarehouseRecords(WarehouseRecordType.Output);
+            //var iccs = wh.Where(x => x.Location.ToLower() == CurrentLocation.ToLower()).Select(x => x.ItemCategory.ToLower()).ToArray();
+
+            //var models = _mapper.Map<Models.ProductionOrder[]>(results.ReadMultiple_Result1)
+            //    .Where(x => iccs.Contains(x.ItemCategory.ToLower()))
+            //     .OrderBy(x => x.StartDate)
+            //    .ToArray();
+
+            var list = ordersList.ReturnList;
+            if(list != null && !string.IsNullOrEmpty(locationCode))
+            {
+                list = list.Where(x => x.LocationCode.Contains(locationCode)).ToArray();
+            }
+
+            if (list != null && !string.IsNullOrEmpty(criteria))
+            {
+                //list = list.Where(x => x.StartingDate == criteria).ToArray();
+            }
+            return PartialView(list);
         }
 
         public async Task<IActionResult> MixerList(string code)

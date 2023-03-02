@@ -1,6 +1,5 @@
 ﻿namespace KQF.Floor.Web.Models.BusinessCentralApi_Models
 {
-
     // NOTE: Generated code may require at least .NET Framework 4.5 or .NET Core/Standard 2.0.
     /// <remarks/>
     [System.SerializableAttribute()]
@@ -10,11 +9,10 @@
     public partial class BinLookup
     {
 
-        private BinLookupBin[] binField;
+        private BinLookupBin binField;
 
         /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute("Bin")]
-        public BinLookupBin[] Bin
+        public BinLookupBin Bin
         {
             get
             {
@@ -38,7 +36,7 @@
 
         private string binCodeField;
 
-        private BinLookupBinItem itemField;
+        private BinLookupBinItem[] itemField;
 
         /// <remarks/>
         public string LocationCode
@@ -67,7 +65,8 @@
         }
 
         /// <remarks/>
-        public BinLookupBinItem Item
+        [System.Xml.Serialization.XmlElementAttribute("Item")]
+        public BinLookupBinItem[] Item
         {
             get
             {
@@ -87,16 +86,16 @@
     public partial class BinLookupBinItem
     {
 
-        private ushort itemNoField;
+        private string itemNoField;
 
-        private object itemDescriptionField;
+        private string itemDescriptionField;
 
         private string itemQuantityBaseField;
 
-        private BinLookupBinItemLot lotField;
+        private BinLookupBinItemLot[] lotField;
 
         /// <remarks/>
-        public ushort ItemNo
+        public string ItemNo
         {
             get
             {
@@ -109,7 +108,7 @@
         }
 
         /// <remarks/>
-        public object ItemDescription
+        public string ItemDescription
         {
             get
             {
@@ -135,7 +134,8 @@
         }
 
         /// <remarks/>
-        public BinLookupBinItemLot Lot
+        [System.Xml.Serialization.XmlElementAttribute("Lot")]
+        public BinLookupBinItemLot[] Lot
         {
             get
             {
@@ -155,18 +155,18 @@
     public partial class BinLookupBinItemLot
     {
 
-        private object lotNoField;
+        private string lotNoField;
 
         private string lotQuantityBaseField;
 
-        private object productionDateField;
+        private string productionDateField;
 
-        private object expirationDateField;
+        private string expirationDateField;
 
         private string onHoldField;
 
         /// <remarks/>
-        public object LotNo
+        public string LotNo
         {
             get
             {
@@ -192,7 +192,7 @@
         }
 
         /// <remarks/>
-        public object ProductionDate
+        public string ProductionDate
         {
             get
             {
@@ -205,7 +205,7 @@
         }
 
         /// <remarks/>
-        public object ExpirationDate
+        public string ExpirationDate
         {
             get
             {
@@ -230,6 +230,7 @@
             }
         }
     }
+
 
 
 }
