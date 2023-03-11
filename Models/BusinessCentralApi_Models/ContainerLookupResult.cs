@@ -105,7 +105,7 @@ namespace KQF.Floor.Web.Models.BusinessCentralApi_Models
 
         private string iCC_CodeField;
 
-        private object iCC_DescriptionField;
+        private string iCC_DescriptionField;
 
         private PackageLookupPackageItemCategoryPackageDetail packageDetailField;
 
@@ -123,7 +123,7 @@ namespace KQF.Floor.Web.Models.BusinessCentralApi_Models
         }
 
         /// <remarks/>
-        public object ICC_Description
+        public string ICC_Description
         {
             get
             {

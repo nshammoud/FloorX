@@ -117,7 +117,7 @@ namespace KQF.Floor.Web.Helpers
                 var request = new RestRequest();
                 request.AddHeader("Authorization", $"Bearer {accessToken}");
                 var response = client.GetAsync(request).Result;
-                var companies = JsonConvert.DeserializeObject<TResponse>(response.Content);
+                var companies = JsonConvert.DeserializeObject<TResponse>(response.Content); // api is not working do we have token? yes
                 return companies;
             }
             catch (Exception ex)
@@ -129,8 +129,6 @@ namespace KQF.Floor.Web.Helpers
 
         public TResponse PostApiResponse<TResponse>(string url, object bodyParameters)
         {
-            try
-            {
                 var accessToken = tokenResponse.Access_token;
                 var client = new RestClient(url);
                 var request = new RestRequest();
@@ -138,13 +136,8 @@ namespace KQF.Floor.Web.Helpers
                 request.RequestFormat = DataFormat.Json;
                 request.AddJsonBody(bodyParameters);
                 var response = client.PostAsync(request).Result;
-                var companies = JsonConvert.DeserializeObject<TResponse>(response.Content);
-                return companies;
-            }
-            catch (Exception ex)
-            {
-                return default;
-            }
-        }
+                var response_ = JsonConvert.DeserializeObject<TResponse>(response.Content);
+                return response_;
+         }
     }
 }

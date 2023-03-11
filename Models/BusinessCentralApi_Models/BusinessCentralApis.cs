@@ -12,6 +12,9 @@
 
         public string productionOrderList { get; set; }
 
+        public string productionManagement { get; set; }
+        public string packageManagement { get; set; }
+
         public string DefaultCompanyName { get; set; }
 
         public string DefaultCompanyId { get; set; }

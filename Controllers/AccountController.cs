@@ -1,11 +1,15 @@
 ﻿using KQF.Floor.Web.Auth.Services;
 using KQF.Floor.Web.Configuration;
+using KQF.Floor.Web.Helpers;
+using KQF.Floor.Web.Models.BusinessCentralApi_Models;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,7 +37,7 @@ namespace KQF.Floor.Web.Controllers
             _userService = authSvc;
             _serviceProvider = provider;
         }
-
+        
         [HttpGet]
         public async Task Login(string returnUrl)
         {
@@ -41,6 +45,8 @@ namespace KQF.Floor.Web.Controllers
             await HttpContext.ChallengeAsync("Microsoft", new AuthenticationProperties() { RedirectUri = returnUrl });
             //return View();
         }
+
+
 
         [HttpPost]
         public async Task<IActionResult> Login(string userName, string password)
@@ -87,7 +93,8 @@ namespace KQF.Floor.Web.Controllers
                     identity.AddClaim(new Claim("location", location));
                 }
 
-                this._locationProvider.Locations = locations;
+                this._locationProvider.Locations = locations; // okay then we need to call .. 
+                // ....
                 this._locationProvider.CurrentLocation = locations.FirstOrDefault();
 
                 var principal = new ClaimsPrincipal(identity);

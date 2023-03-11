@@ -27,6 +27,11 @@
 
 @{
     var package = Model.ContainerLookupResults.Package;
+
+    var package_ = Model.ContainerLookupResults.Package
+                  .Where(x => x.ItemCategory.ICC_Code != null)
+                  .GroupBy(x => x.ItemCategory.ICC_Code)
+                  .Select(x => x.Select(y => y.ItemCategory.ICC_Code));
 }
 
 @if (package.Length > 0)
@@ -46,7 +51,7 @@
                         <div id="card-header" class="d-flex flex-wrap row">
                             <h5 class="card-title fw-bold col-6">
                                 Category:
-                                <span class="fw-normal">@(p.ItemCategory)</span>
+                                <span class="fw-normal">@(IC.ICC_Code)</span>
                             </h5>
                             <p class="card-text fw-bold col-6">
                                 Description:

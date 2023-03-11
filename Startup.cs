@@ -33,6 +33,8 @@ using KQF.Floor.Web.Helpers;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Newtonsoft.Json;
 using KQF.Floor.Web.Models.BusinessCentralApi_Models;
+using KQF.Floor.Web.Controllers;
+using Microsoft.AspNetCore.Http;
 
 namespace KQF.Floor.Web
 {
@@ -68,7 +70,13 @@ namespace KQF.Floor.Web
 
             services.AddScoped<Auth.Services.IAuthenticationService, Auth.Services.LdapAuthenticationService>();
             services.AddTransient<IAuthorizationHandler, Auth.ClaimsHandling.LocationClaimsHandler>();
-            services.AddTransient<Auth.LocationProvider>();
+
+            services.AddTransient<Auth.LocationProvider>(); // this needs to be refactored ... 
+            // services.AddScoped<Auth.LocationProvider>();
+
+            services.AddTransient<KQF.Floor.Web.Models.BusinessCentralApi_Models.Location>();
+            services.AddTransient<HomeController>();
+
             services.AddTransient<ItemNumberClient>();
             services.AddTransient<FeatureFlagProvider>();
 

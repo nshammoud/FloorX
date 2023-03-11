@@ -5,6 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using KQF.Floor.Web.Models.BusinessCentralApi_Models;
+using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
+using KQF.Floor.Web.Helpers;
 
 namespace KQF.Floor.Web.Controllers
 {
@@ -14,6 +18,8 @@ namespace KQF.Floor.Web.Controllers
     {
         private readonly NavServices.ProductionMgmt.ProductionMgmtClient _prodMgmtClient;
         private readonly NavServices.MoveContainerMgm.MoveContainerMgmClient _moveContainerMgmClient;
+        private readonly IOptions<BusinessCentralApis> _businessApis;
+        private readonly IOptions<LoginBaseSettingConfig> _config;
 
         public MaterialManagementController(
           KQF.Floor.Data.FloorDataContext context,
@@ -23,13 +29,17 @@ namespace KQF.Floor.Web.Controllers
         IMapper mapper,
         ILogger<LookupController> logger,
         Services.UserSettingsService userSettingsService,
-        Auth.LocationProvider locationProvider, FeatureFlagProvider featureFlags) : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags) {
+        Auth.LocationProvider locationProvider, FeatureFlagProvider featureFlags, 
+        IOptions<LoginBaseSettingConfig> config, IOptions<BusinessCentralApis> businessApis) : base(logger, locationProvider, uiConfig, userSettingsService, featureFlags) {
             _prodMgmtClient = prodMgmtClient;
             _moveContainerMgmClient = moveContainerMgmClient;
+            _config = config;
+            _businessApis = businessApis;
         }
 
         public IActionResult Index()
         {
+            // NSH Commented out code until refactor locations...
             //if(!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
             //{
             //    return RedirectToAction("Index", "Home");
@@ -41,12 +51,13 @@ namespace KQF.Floor.Web.Controllers
         [HttpGet("Singling")]
         public IActionResult Singling(string source, string destination)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // NSH Commented out code until refactor locations...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
 
-
+            
             return View(new SplitPostModel() { Source = source, Destination = destination, Weight =0m, NoOfRods = 0 });
         }
 
@@ -55,7 +66,20 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-                var result = await _prodMgmtClient.SplitCNTAsync(model.Source, model.Destination, model.NoOfRods, model.Weight);
+                // NSH Commented out code for refactor ...
+                //var result = await _prodMgmtClient.SplitCNTAsync(model.Source, model.Destination, model.NoOfRods, model.Weight);
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.productionManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.splitCart");
+                var obj = new
+                {
+                    pCartNo = model.Source,
+                    pNewCartNo = model.Destination,
+                    pNumberOfROD = model.NoOfRods,
+                    pGrossWeight = model.Weight
+                };
+
+                var results = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
                 model.IsSuccess = true;
                 model.Message = $"Posted {model.Weight}lbs / {model.NoOfRods} rods from {model.Source} to {model.Destination}";
             }catch(Exception ex)
@@ -68,13 +92,16 @@ namespace KQF.Floor.Web.Controllers
             return View(model);
         }
 
+
         [HttpGet("Doubling")]
         public IActionResult Doubling(string source, string destination)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // << NSH Commented out code for refactor ...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
+            // NSH >> Commented out code for refactor ...
 
             return View(new MaterialPostModel() { Source = source, Destination = destination });
         }
@@ -82,16 +109,28 @@ namespace KQF.Floor.Web.Controllers
         [HttpPost("Doubling")]
         public async Task<IActionResult> Doubling(MaterialPostModel model)
         {
-            var req = new NavServices.ProductionMgmt.MergeCART()
-            {
-                pCartNo = model.Source,
-                pMsg = "",
-                pNewCartNo = model.Destination
-            };
+            // << NSH  Commented out code for refactor ...
+            //var req = new NavServices.ProductionMgmt.MergeCART()
+            //{
+            //    pCartNo = model.Source,
+            //    pMsg = "",
+            //    pNewCartNo = model.Destination
+            //};
+            // NSH >>
             try
             {
-                var result = await _prodMgmtClient.MergeCARTAsync(req);
-                model.Message = result.pMsg;
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.productionManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.mergeCarts");
+                var obj = new
+                {
+                    pCartNo = model.Source,
+                    pNewCartNo = model.Destination
+                };
+
+                var results = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
+                //var result = await _prodMgmtClient.MergeCARTAsync(req);  // NSH >>
+                model.Message = results.ToString();
                 model.IsSuccess = true;
             }catch(Exception ex)
             {
@@ -107,10 +146,12 @@ namespace KQF.Floor.Web.Controllers
         [HttpGet("Container")]
         public IActionResult Container(string ctr)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // << NSH   Commented out code for refactor ...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
+            //  NSH >>   Commented out code for refactor ...
 
             return View(new MaterialPostModel() { Source = ctr ?? "" });
         }
@@ -120,7 +161,16 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-                var result = await _prodMgmtClient.MoveCNTAsync(model.Source, model.Destination);
+                //var result = await _prodMgmtClient.MoveCNTAsync(model.Source, model.Destination); //NSH >>
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.productionManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.mergeCarts");
+                var obj = new
+                {
+                    pCartNo = model.Source,
+                    pNewCartNo = model.Destination
+                };
+                var results = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
                 model.Message = $"Moved contents from {model.Source} to {model.Destination}";
                 model.IsSuccess =true;
             }catch(Exception ex)
@@ -136,10 +186,12 @@ namespace KQF.Floor.Web.Controllers
         [HttpGet("MoveBetweenBins")]
         public IActionResult MoveBetweenBins(string bin, string item, string lot, decimal? qty)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // << NSH  Commented out code for refactor ...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
+            // NSH >>  Commented out code for refactor ...
 
             return View(new MoveItemPostModel() { Source = bin, ItemNo = item, LotNo = lot, Qty = qty ?? 0.0m });
         }
@@ -149,8 +201,22 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-                var result = await _moveContainerMgmClient.MoveBetweenBinsAsync(_locationProvider.CurrentLocation, model.ItemNo,
-                    model.LotNo, model.Source, model.Qty, model.Destination);
+                //var result = await _moveContainerMgmClient.MoveBetweenBinsAsync(_locationProvider.CurrentLocation, model.ItemNo,
+                //    model.LotNo, model.Source, model.Qty, model.Destination); // NSH >>
+                var currentLocation = HttpContext.Session.GetString("Location_Code");
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.packageManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.moveBetweenBins");
+                var obj = new
+                {
+                    pLocationCode = model.Source,
+                    pItemNo = model.ItemNo,
+                    pLotNo = model.LotNo,
+                    pSourceBin = model.Source,
+                    pQty = model.Qty,
+                    pDestinationBin = model.Destination
+                };
+                var result = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
                 model.Message = $"Moved {model.Qty} items with item number {model.ItemNo} from lot number {model.LotNo} from {model.Source} to {model.Destination}";
                 model.IsSuccess = true;
             }
@@ -167,10 +233,12 @@ namespace KQF.Floor.Web.Controllers
         [HttpGet("MoveItemsToContainer")]
         public IActionResult MoveItemsToContainer(string bin, string item, string lot, decimal? qty)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // << NSH   Commented out code for refactor ...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
+            // NSH >>  Commented out code for refactor ...
 
             return View(new MoveItemPostModel() { Source = bin, ItemNo = item, LotNo = lot, Qty = qty ?? 0.0m });
         }
@@ -180,8 +248,22 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-                var result = await _moveContainerMgmClient.MoveItemsToContainerAsync(_locationProvider.CurrentLocation, model.ItemNo,
-                    model.LotNo, model.Source, model.Qty, model.Destination);
+                //var result = await _moveContainerMgmClient.MoveItemsToContainerAsync(_locationProvider.CurrentLocation, model.ItemNo,
+                //    model.LotNo, model.Source, model.Qty, model.Destination); // NSH
+                var currentLocation = HttpContext.Session.GetString("Location_Code");
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.packageManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.moveItemsToPackage");
+                var obj = new
+                {
+                    pLocationCode = model.Source,
+                    pItemNo = model.ItemNo,
+                    pLotNo = model.LotNo,
+                    pSourceBin = model.Source,
+                    pQty = model.Qty,
+                    pPackageNo = model.Destination
+                };
+                var result = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
                 model.Message = $"Moved {model.Qty} items with item number {model.ItemNo} from lot number {model.LotNo} from {model.Source} to {model.Destination}";
                 model.IsSuccess = true;
             }
@@ -198,10 +280,12 @@ namespace KQF.Floor.Web.Controllers
         [HttpGet("MoveItemsBetweenContainers")]
         public IActionResult MoveItemsBetweenContainers(string item, string ctr, string lot, decimal? qty)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // << NSH   Commented out code for refactor ...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
+            // NSH >> Commented out code for refactor ...
 
             return View(new MoveBetweenPostModel() { Source = ctr, ItemNo = item, LotNo = lot, Qty = qty ?? 0.0m, MovePartial = true });
         }
@@ -218,9 +302,23 @@ namespace KQF.Floor.Web.Controllers
             
             try
             {
-                var result = await _moveContainerMgmClient.MoveItemsBetweenContainersAsync(_locationProvider.CurrentLocation, model.ItemNo,
-                    model.LotNo, model.Qty, string.Empty, model.Source, model.Destination, model.MovePartial);
-                
+                //var result = await _moveContainerMgmClient.MoveItemsBetweenContainersAsync(_locationProvider.CurrentLocation, model.ItemNo,
+                //    model.LotNo, model.Qty, string.Empty, model.Source, model.Destination, model.MovePartial); // NSH
+                var currentLocation = HttpContext.Session.GetString("Location_Code");
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.packageManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.moveItemsBetweenPackages");
+                var obj = new
+                {
+                    pLocationCode = model.Source,
+                    pItemNo = model.ItemNo,
+                    pLotNo = model.LotNo,
+                    pQty = model.Qty,
+                    pSourcePackageNo = model.Source,
+                    pDestPackageNo = model.Destination,
+                    pMovePartial = model.MovePartial,
+                };
+                var result = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
                 model.Message = model.MovePartial 
                     ? $"Moved {model.Qty} items with item number {model.ItemNo} from lot number {model.LotNo} from {model.Source} to {model.Destination} with partial move"
                     : $"Moved items from {model.Source} to {model.Destination} without partial move"; ;
@@ -239,10 +337,12 @@ namespace KQF.Floor.Web.Controllers
         [HttpGet("MoveContainerToBin")]
         public IActionResult MoveContainerToBin(string ctr)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // NSH >> Commented out code for refactor ...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
+            // << NSH Commented out code for refactor ...
 
             return View(new MaterialPostModel() { Source = ctr });
         }
@@ -252,7 +352,19 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-                var result = await _moveContainerMgmClient.MoveContainerToBinAsync(_locationProvider.CurrentLocation, model.Destination, model.Source);
+                //NSH
+                //var result = await _moveContainerMgmClient.MoveContainerToBinAsync(_locationProvider.CurrentLocation, model.Destination, model.Source);
+                var currentLocation = HttpContext.Session.GetString("Location_Code");
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.packageManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.movePackageToBin");
+                var obj = new
+                {
+                    pLocationCode = model.Source,
+                    pDestinationBin = model.Destination,
+                    pSourcePackageNo = model.Source,
+                };
+                var result = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
                 model.Message = $"Moved container {model.Source} to {model.Destination}";
                 model.IsSuccess = true;
             }
@@ -269,10 +381,12 @@ namespace KQF.Floor.Web.Controllers
         [HttpGet("RemoveContentOfContainer")]
         public IActionResult RemoveContentOfContainer(string item, string ctr, string lot, decimal? qty)
         {
-            if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
-            {
-                return RedirectToAction("Index", "Home");
-            }
+            // << NSH Commented out code for refactor ...
+            //if (!_featureFlags.FlagEnabled("material-mgmt", HttpContext.User))
+            //{
+            //    return RedirectToAction("Index", "Home");
+            //}
+            // NSH >> Commented out code for refactor ...
 
             return View(new MoveBetweenPostModel() { Source = ctr, ItemNo = item, LotNo = lot, Qty = qty ?? 0.0m, MovePartial = true });
         }
@@ -289,8 +403,23 @@ namespace KQF.Floor.Web.Controllers
 
             try
             {
-                var result = await _moveContainerMgmClient.RemoveContentOfContainerAsync(_locationProvider.CurrentLocation, model.ItemNo,
-                    model.LotNo, string.Empty, model.Qty, string.Empty, model.Source, string.Empty, model.MovePartial);
+                //var result = await _moveContainerMgmClient.RemoveContentOfContainerAsync(_locationProvider.CurrentLocation, model.ItemNo,
+                //    model.LotNo, string.Empty, model.Qty, string.Empty, model.Source, string.Empty, model.MovePartial); //NSH
+                var currentLocation = HttpContext.Session.GetString("Location_Code");
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiUrl = $"{_businessApis.Value.BaseUrl}{_businessApis.Value.packageManagement}";
+                var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.removeContentOfPackage");
+                var obj = new
+                {
+                    pLocationCode = currentLocation,
+                    pItemNo= model.ItemNo,
+                    pLotNo = model.LotNo,
+                    pQty= model.Qty,
+                    pSourcePackageNo = model.Source,
+                    pMovePartial = model.MovePartial
+                };
+                var result = new BusinessCentralApiHelper(_config.Value, HttpContext).PostApiResponse<GenericResponse2<string>>(binaApiUrl, obj);
+
                 model.Message = model.MovePartial
                     ? $"Removed {model.Qty} items with item number {model.ItemNo} from lot number {model.LotNo} from {model.Source} with partial move"
                     : $"Removed items from {model.Source} without partial move"; 

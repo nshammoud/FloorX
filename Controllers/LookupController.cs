@@ -167,6 +167,7 @@ namespace KQF.Floor.Web.Controllers
                 }
                 catch (Exception)
                 {
+
                 }
 
                 return View(lookupModel);
@@ -190,6 +191,10 @@ namespace KQF.Floor.Web.Controllers
                 SearchTerm = number,
                 Results = new List<LookupResult>()
             };
+
+            //string pLocation = _locationProvider.CurrentLocation.ToUpper();
+            string[] pLocations = _locationProvider.Locations; 
+            //_locationProvider need to load // ok
 
             var currentLocation = HttpContext.Session.GetString("Location_Code");
 
@@ -270,8 +275,14 @@ namespace KQF.Floor.Web.Controllers
                 LookupContainer_.ContainerLookupResults = ContainerResult;
                 if (LookupContainer_.ContainerLookupResults.Package != null)
                 {
+                    //group the packages by ICC
+                    var groups = LookupContainer_.ContainerLookupResults.Package
+                        .Where(x => x.ItemCategory.ICC_Code != null)
+                        .GroupBy(x => x.ItemCategory.ICC_Code)
+                        .Select(x => x.Select(y => y.ItemCategory.ICC_Code));
                     LookupContainer_.ResultType = "Container";
                     LookupContainer_.Title = LookupContainer_.ContainerLookupResults.Package[0].PackageNo;
+                    //LookupContainer_.ContainerLookupResults.Package = groups;
                     model.Results.Add(LookupContainer_);
                 }
             }

@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using KQF.Floor.Web.Controllers;
+using KQF.Floor.Web.Models.BusinessCentralApi_Models;
+using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,12 +13,29 @@ namespace KQF.Floor.Web.Auth
     {
         private readonly IHttpContextAccessor _contextAccessor;
         private readonly NavServices.LocationList.LocationListClient _locationListClient;
+        private readonly List<KQF.Floor.Web.Models.BusinessCentralApi_Models.Location> locationListClient_;
+        public readonly HttpContext _httpContext;
 
-        public LocationProvider(IHttpContextAccessor contextAccessor, NavServices.LocationList.LocationListClient locationListClient)
+        //<< NSH 
+        //public LocationProvider(IHttpContextAccessor contextAccessor, NavServices.LocationList.LocationListClient locationListClient)
+        //{
+        //    _contextAccessor = contextAccessor;
+        //    _locationListClient = locationListClient;
+        //}
+        // NSH >>
+
+        //<< NSH
+        public LocationProvider(IHttpContextAccessor contextAccessor, Web.Models.BusinessCentralApi_Models.Location locationListClientX, IHttpContextAccessor httpContextAccessor)
         {
             _contextAccessor = contextAccessor;
-            _locationListClient = locationListClient;
+            _httpContext = httpContextAccessor.HttpContext;
+            var test = _httpContext.Session.GetString("LocationsList_" + "a2db7307-078b-ed11-aad8-000d3a21edc2");
+            if(test != null)
+            {
+                var loc = JsonConvert.DeserializeObject<GenericResponse<Location>>(test);
+            }
         }
+        // NSH >>
 
         public void ClearCache()
         {
@@ -27,6 +47,11 @@ namespace KQF.Floor.Web.Auth
         {
             get
             {
+                var test = _httpContext.Session.GetString("LocationsList_" + "a2db7307-078b-ed11-aad8-000d3a21edc2");
+                if (test != null)
+                {
+                    var loc = JsonConvert.DeserializeObject<GenericResponse<Location>>(test);
+                }
                 var locations = _contextAccessor.HttpContext.Session.GetString("Locations");
                 if (locations == null || locations == string.Empty)
                 {

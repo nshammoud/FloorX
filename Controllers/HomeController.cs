@@ -1,4 +1,5 @@
-﻿using KQF.Floor.Web.Configuration;
+﻿using KQF.Floor.Web.Auth;
+using KQF.Floor.Web.Configuration;
 using KQF.Floor.Web.Helpers;
 using KQF.Floor.Web.Hubs;
 using KQF.Floor.Web.Models;
@@ -57,7 +58,6 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-
                 var sessionStoredCompanies = HttpContext.Session.GetString("CompaniesList");
                 if (!string.IsNullOrEmpty(sessionStoredCompanies))
                 {
@@ -105,8 +105,7 @@ namespace KQF.Floor.Web.Controllers
             {
                 var locationApi = string.Format(_businessApis.Value.Location, companyId);
                 var apiUrl = $"{_businessApis.Value.BaseUrl}{locationApi}";
-                locations = new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Location>>(apiUrl);
-
+                locations =  new BusinessCentralApiHelper(_config.Value, HttpContext).GetApiResponse<GenericResponse<Location>>(apiUrl);
                 HttpContext.Session.SetString($"LocationsList_{companyId}", JsonConvert.SerializeObject(locations));
             }
             
@@ -119,6 +118,7 @@ namespace KQF.Floor.Web.Controllers
                 return PartialView("_LocationList", locations);
             }
         }
+
 
         [AllowAnonymous]
         public IActionResult callback(string code)
@@ -135,8 +135,9 @@ namespace KQF.Floor.Web.Controllers
 
         [Route("signin-microsoft")]
         [AllowAnonymous]
-        public IActionResult signin_microsoft(string code)
+        public  IActionResult signin_microsoft(string code)
         {
+            GetLocationsByCompanyId("a2db7307-078b-ed11-aad8-000d3a21edc2", true);
             return RedirectToAction("index");
         }
 
