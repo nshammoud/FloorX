@@ -161,14 +161,14 @@ namespace KQF.Floor.Web.Controllers
             };
             if (!string.IsNullOrEmpty(number))
             {
-                try
-                {
+                //try
+                //{
                     lookupModel = await DoLookup(number);
-                }
-                catch (Exception)
-                {
-
-                }
+                //}
+                //catch (Exception ex)
+                //{
+                   // ViewBag.Error = new { ErrorMessage = ex.Message, StackTrace = ex.StackTrace };
+                //}
 
                 return View(lookupModel);
             }

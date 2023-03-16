@@ -6,6 +6,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text;
 
 namespace KQF.Floor.Web.Helpers
 {
@@ -117,8 +120,17 @@ namespace KQF.Floor.Web.Helpers
                 var request = new RestRequest();
                 request.AddHeader("Authorization", $"Bearer {accessToken}");
                 var response = client.GetAsync(request).Result;
-                var companies = JsonConvert.DeserializeObject<TResponse>(response.Content); // api is not working do we have token? yes
-                return companies;
+                if (!response.IsSuccessful) 
+                {
+
+                return default;
+            }
+                else
+                {
+                    var companies = JsonConvert.DeserializeObject<TResponse>(response.Content);
+                    return companies;
+                }
+
             }
             catch (Exception ex)
             {
@@ -129,15 +141,52 @@ namespace KQF.Floor.Web.Helpers
 
         public TResponse PostApiResponse<TResponse>(string url, object bodyParameters)
         {
+
+            var accessToken = tokenResponse.Access_token;
+            var client = new RestClient(url);
+            var request = new RestRequest();
+            request.AddHeader("Authorization", $"Bearer {accessToken}");
+            request.RequestFormat = DataFormat.Json;
+            request.AddJsonBody(bodyParameters);
+            var response = client.PostAsync(request).Result;
+            var response_ = JsonConvert.DeserializeObject<TResponse>(response.Content);
+            return response_;
+        }
+
+
+        public TResponse PostApiResponse_<TResponse>(string url, object bodyParameters)
+        {
+            try
+            {
+                HttpClient client = new HttpClient();
+                client.BaseAddress = new Uri(url);
+                client.DefaultRequestHeaders
+                        .Accept
+                        .Add(new MediaTypeWithQualityHeaderValue("application/json"));//ACCEPT header  
+
+                //append the parameter at the end of the request url  
+                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, url);
+
+                //// the following cod will add the jwt token in the http request header.  
                 var accessToken = tokenResponse.Access_token;
-                var client = new RestClient(url);
-                var request = new RestRequest();
-                request.AddHeader("Authorization", $"Bearer {accessToken}");
-                request.RequestFormat = DataFormat.Json;
-                request.AddJsonBody(bodyParameters);
-                var response = client.PostAsync(request).Result;
-                var response_ = JsonConvert.DeserializeObject<TResponse>(response.Content);
+                request.Headers.Add("Authorization", $"Bearer {accessToken}");
+
+
+                request.Content = new StringContent(bodyParameters.ToString(),
+                                    Encoding.UTF8,
+                                    "application/json");//CONTENT-TYPE header
+
+                //StringContent queryString = new StringContent(bodyParameters.ToString());
+                //request.Content = queryString;
+
+                HttpResponseMessage response = client.SendAsync(request).Result;
+                var response_ = JsonConvert.DeserializeObject<TResponse>(response.Content.ToString());
                 return response_;
-         }
+            }
+            catch (Exception ex) 
+            {
+                return default;
+            }
+        }
     }
 }
