@@ -49,7 +49,7 @@
         }
         @if (whs.Count > 0)
         {
-            var lastLot = "";
+            var lastLot = "lastLot";
             @foreach (var wh in whs.OrderBy(x => x.LotNo).ThenBy(x => x.Bin).ThenBy(x => x.ContainerNo))
             {
                 var isLotRow = wh.LotNo != lastLot;

@@ -273,7 +273,7 @@ namespace KQF.Floor.Web.Controllers
             {
                 ContainerResult = (Models.BusinessCentralApi_Models.PackageLookup)serializer2.Deserialize(reader2);
                 LookupContainer_.ContainerLookupResults = ContainerResult;
-                if (LookupContainer_.ContainerLookupResults.Package != null)
+                if (!String.IsNullOrEmpty(LookupContainer_.ContainerLookupResults.Package[0].PackageNo))
                 {
                     //group the packages by ICC
                     var groups = LookupContainer_.ContainerLookupResults.Package
