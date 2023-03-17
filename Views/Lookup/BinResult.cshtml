@@ -73,16 +73,16 @@
                                 </h6>
                             </div>
                             <div>
-                                <h6 class="sub-header">Containers:</h6>
+                                <h6 class="sub-header">Packages:</h6>
                                 <div class="d-flex flex-wrap justify-content-sm-start">
-                                    @*@foreach (var c in lot.Containers)
+                                    @foreach (var package in lot.Package)
                                     {
                                         <span class="inner-card-text badge bg-secondary m-1">
-                                            <a class="text-light" href="@Url.Action("Index", new { number = c.ContainerNo })">
-                                                @(string.IsNullOrEmpty(c.ContainerNo) ? "(n/a)" : c.ContainerNo): @c.ContainerQuantityBase
+                                        <a class="text-light" href="@Url.Action("Index", new { number = package.PackageNo })">
+                                            @(string.IsNullOrEmpty(package.PackageNo) ? "(n/a)" : package.PackageNo): @package.PackageQuantityBase
                                             </a>
                                         </span>
-                                    }*@
+                                    }
                                 </div>
                             </div>
                             <div class="text-end">

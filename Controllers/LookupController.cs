@@ -205,7 +205,7 @@ namespace KQF.Floor.Web.Controllers
             var binaApiUrl = string.Format(apiUrl, companyId, "Microsoft.NAV.binLookup");
             var obj = new
             {
-                pLocation = string.Empty,
+                pLocation = currentLocation,
                 pBinCode = number,
                 pItemNo = string.Empty,
                 pLotNo = string.Empty

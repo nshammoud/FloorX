@@ -165,6 +165,8 @@
 
         private string onHoldField;
 
+        private BinLookupBinItemLotPackage[] PackageField;
+
         /// <remarks/>
         public string LotNo
         {
@@ -229,8 +231,52 @@
                 this.onHoldField = value;
             }
         }
+        [System.Xml.Serialization.XmlElementAttribute("Package")]
+        public BinLookupBinItemLotPackage[] Package
+        {
+            get
+            {
+                return this.PackageField;
+            }
+            set
+            {
+                this.PackageField = value;
+            }
+        }
     }
 
+    [System.SerializableAttribute()]
+    [System.ComponentModel.DesignerCategoryAttribute("code")]
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true, Namespace = "urn:microsoft-dynamics-nav/xmlports/x50201")]
+    public partial class BinLookupBinItemLotPackage
+    {
+
+        private string PackageNoField;
+
+        private string PackageQuantityBaseField;
 
 
+        public string PackageNo
+        {
+            get
+            {
+                return this.PackageNoField;
+            }
+            set
+            {
+                this.PackageNoField = value;
+            }
+        }
+        public string PackageQuantityBase
+        {
+            get
+            {
+                return this.PackageQuantityBaseField;
+            }
+            set
+            {
+                this.PackageQuantityBaseField = value;
+            }
+        }
+    }
 }
