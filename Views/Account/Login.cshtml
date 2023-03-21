@@ -11,7 +11,7 @@
                 Floor Login
             </div>
             <div class="card-body">
-                <h5 class="card-title">Enter your KQF Credentials</h5>
+   @*             <h5 class="card-title">Enter your KQF Credentials</h5>
 
                 <form method="post" action="@Url.Action("Login")">
 
@@ -32,8 +32,14 @@
                     </ul>
             
                     <button type="submit" class="btn btn-primary">Login</button>
+                </form>*@
+                <form method="get" action="@Url.Action("ExternalLogin")">
+                <div class="bsk-container">
+                        <button style="margin-left: 70px;" class="bsk-btn bsk-btn-default">
+                            <i class="fa fa-windows"></i> Sign in with your Microsoft Account
+                    </button>
+                </div>
                 </form>
-
 
             </div>
 

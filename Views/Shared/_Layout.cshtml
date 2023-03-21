@@ -55,14 +55,14 @@
                                 <a class="nav-link dropdown-toggle" href="#" id="dropdown06" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="gg-chevron-double-right d-inline"></i> Companies
                                 </a>
-                                <ul class="dropdown-menu companiesList" aria-labelledby="dropdown06">
+                                <ul id="company-name" class="dropdown-menu companiesList" aria-labelledby="dropdown06">
                                 </ul>
                             </li>
                             <li class="nav-item dropdown ml-3 mr-3">
-                                <a class="nav-link dropdown-toggle" href="#" id="dropdown06" data-bs-toggle="dropdown" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle" href="#" id="dropdown07" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="gg-chevron-double-right d-inline"></i> @(String.IsNullOrEmpty(currentLocation) ? "Location" : currentLocation)
                                 </a>
-                                <ul class="dropdown-menu locationDropDown" aria-labelledby="dropdown06">
+                                <ul class="dropdown-menu locationDropDown" aria-labelledby="dropdown07">
                                     @foreach (var l in ((ViewData["Locations"] as string[]) ?? new string[] { }))
                                     {
                                         <li id="@l">
@@ -296,6 +296,7 @@
 
         $(document).ready(function () {
             $("ul.locationDropDown").on("click", "li", function () {
+                localStorage.setItem("locationselected", $(this).text());
                 $.post("/home/SaveLocationInSession?locationCode=" + $(this).attr("id")).done(function (isDone) {
                     window.location.reload();
                 })
@@ -303,10 +304,18 @@
         });
         //NSH>>
 
+        $(document).ready(function () {
+            $("ul.companiesList").on("click", "li", function () {
+                localStorage.setItem("companyselected", $(this).text());
+            });
+        });
 
         loadCompanies();
 
         if (companyId !== "") {
+            if (localStorage.getItem("companyselected") != null) {
+                $("#dropdown06").text(localStorage.getItem("companyselected"));
+            }
             loadLocations();
         }
 
@@ -319,6 +328,9 @@
                     $(".locationDropDown").append(`<li id=${this.code}><a class="dropdown-item">${this.code}</a></li>`);
                 })
             })
+            if (localStorage.getItem("locationselected") != null) {
+                $("#dropdown07").text(localStorage.getItem("locationselected"));
+            }
         }
         //<<NSH
 
