@@ -307,13 +307,14 @@
         $(document).ready(function () {
             $("ul.companiesList").on("click", "li", function () {
                 localStorage.setItem("companyselected", $(this).text());
+                localStorage.removeItem("locationselected");
             });
         });
 
         loadCompanies();
 
         if (companyId !== "") {
-            if (localStorage.getItem("companyselected") != null) {
+            if (localStorage.getItem("companyselected") != null && window.location.href.search('companyId=') != -1) {
                 $("#dropdown06").text(localStorage.getItem("companyselected"));
             }
             loadLocations();
@@ -328,7 +329,7 @@
                     $(".locationDropDown").append(`<li id=${this.code}><a class="dropdown-item">${this.code}</a></li>`);
                 })
             })
-            if (localStorage.getItem("locationselected") != null) {
+            if (localStorage.getItem("locationselected") != null && window.location.href.search('companyId=') != -1) {
                 $("#dropdown07").text(localStorage.getItem("locationselected"));
             }
         }
