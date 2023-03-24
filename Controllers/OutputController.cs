@@ -152,11 +152,22 @@ namespace KQF.Floor.Web.Controllers
 
 
             var shiftChange = CurrentDate.AddSeconds(Convert.ToDouble(locationItem.EndOfDayOffset));
-
-
             var showPreviousDay = DateTime.Now <= shiftChange;
-            var criteria = showPreviousDay ? $"{yesterday}..{today}" : $"{today}";
+            //var criteria = showPreviousDay ? $"{yesterday}..{today}" : $"{today}"; //NSH
+            DateTime? StrDateFrom = null; 
+            DateTime? StrDateTo = null;
+            if (showPreviousDay)
+            {
+                StrDateFrom = Convert.ToDateTime(yesterday);
+                StrDateTo = Convert.ToDateTime(today);
+            } else
+            {
+                StrDateFrom = Convert.ToDateTime(today);
+                StrDateTo = Convert.ToDateTime(today);
+            }
 
+            
+            //NSH >>
             //results = await _productOrders.ReadMultipleAsync(new MWSProductionOrderListV2_Filter[] {
             //     new MWSProductionOrderListV2_Filter()
             //    {
@@ -178,6 +189,7 @@ namespace KQF.Floor.Web.Controllers
             //    .Where(x => iccs.Contains(x.ItemCategory.ToLower()))
             //     .OrderBy(x => x.StartDate)
             //    .ToArray();
+            //<<NSH
 
             var list = ordersList.ReturnList;
             if(list != null && !string.IsNullOrEmpty(locationCode))
@@ -185,10 +197,18 @@ namespace KQF.Floor.Web.Controllers
                 list = list.Where(x => x.LocationCode.Contains(locationCode)).ToArray();
             }
 
-            if (list != null && !string.IsNullOrEmpty(criteria))
+            //>> NSH
+            //if (list != null && !string.IsNullOrEmpty(criteria)) 
+            //{
+            //    list = list.Where(x => x.StartingDate >= StrDateFrom).ToArray();
+            //}
+
+            if (list != null && StrDateFrom != null)
             {
-                //list = list.Where(x => x.StartingDate == criteria).ToArray();
+                list = list.Where(x => x.StartingDate >= StrDateFrom && x.StartingDate <= StrDateTo).ToArray();
             }
+            //<< NSH
+
             return PartialView(list);
         }
 

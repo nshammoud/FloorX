@@ -78,10 +78,10 @@ namespace KQF.Floor.Web.Models
         public string WorkCenterNo { get; set; }
 
         [JsonProperty(PropertyName = "startingDate")]
-        public string StartingDate { get; set; }
+        public DateTime StartingDate { get; set; }
 
         [JsonProperty(PropertyName = "startingTime")]
-        public string StartingTime { get; set; }
+        public DateTime StartingTime { get; set; }
 
         [JsonProperty(PropertyName = "resourceCaption")]
         public string ResourceCaption { get; set; }

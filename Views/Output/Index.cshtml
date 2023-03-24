@@ -10,10 +10,10 @@
         <div class="card  box-shadow">
             <h5 class="card-header">
                 Output Journal
-                @if (User.HasRole("supervisor", ViewData["CurrentLocation"] as string))
-                {
-                    <input type="date" value="@Model.ToString("yyyy-MM-dd")" id="dateFilter" class="form-control d-inline-block" style="max-width:250px;" />
-                }
+                @*@if (User.HasRole("supervisor", ViewData["CurrentLocation"] as string))  >>> NSH
+        {*@
+                <input type="date" value="@Model.ToString("yyyy-MM-dd")" id="dateFilter" class="form-control d-inline-block" style="max-width:250px;" />
+                @*}*@
 
                 <code class="float-end mt-1" style="font-size:13px;">
                     <ul class="list-inline">
@@ -213,6 +213,7 @@
                     block();
             var url = '@Url.Action("ProductionOrders")';
             $.get(url, (r) => {
+                console.log(r) /* NSH*/
                 $("#jobList").html(r);
 
             }).done(function (msg) { unblock(); })
