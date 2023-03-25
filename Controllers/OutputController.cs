@@ -234,22 +234,42 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
-                var result = await _prodMgmtClient.PostOutputAsync(new PostOutput()
+                var obj = new
                 {
-                    pCartID = model.UseCartId ? (string.IsNullOrEmpty(model.ContainerNo) ? " " : model.ContainerNo) : " ",
-                    pcodContainerNo = model.UseCartId ? " " : (string.IsNullOrEmpty(model.ContainerNo) ? " " : model.ContainerNo),
-                    pcodLotNo = "",
-                    pcodProdOrderNo = model.JobNumber,
-                    pcodSerialNo = "",
-                    pcodWorkShiftCode = "",
-                    pNoRodsBolos = model.BolosOrRods ?? 0m,
+                    pProdOrderNo = model.JobNumber,
+                    pWorkShiftCode = "", // we don't have this yet
+                    pPackageNo = model.ContainerNo,
+                    pLotNo = "", // we don't have this yet
+                    pSerialNo = string.Empty,
                     pQuantity = model.Quantity,
-                    ptxtMsg = "",
-                    pWCResource = String.IsNullOrEmpty(model.MixerLine) ? " " : model.MixerLine // the space is intentional.
+                    pWCResource = "", // we don't have this yet
+                    pNoRodsBolos = model.BolosOrRods,
+                    pCartID = model.UseCartId.ToString(), // was a bool but our API accepts string so i converted it into string
+                };
+                var companyId = HttpContext.Session.GetString("CompanyID");
+                var apiHelper = new BusinessCentralApiHelper(_loginApiConfig.Value, HttpContext);
+                // we will our own API here
+                var ordersDetailApi = string.Format(_businessApis.Value.productionManagement, companyId, "Microsoft.NAV.postOutputJournal");
+                var orderDetailApi = $"{_businessApis.Value.BaseUrl}{ordersDetailApi}";
+                var result = apiHelper.PostApiResponse<dynamic>(orderDetailApi, obj);
 
-                });
+                // NSH
+                //var result = await _prodMgmtClient.PostOutputAsync(new PostOutput()
+                //{
+                //    pCartID = model.UseCartId ? (string.IsNullOrEmpty(model.ContainerNo) ? " " : model.ContainerNo) : " ",
+                //    pcodContainerNo = model.UseCartId ? " " : (string.IsNullOrEmpty(model.ContainerNo) ? " " : model.ContainerNo),
+                //    pcodLotNo = "",
+                //    pcodProdOrderNo = model.JobNumber,
+                //    pcodSerialNo = "",
+                //    pcodWorkShiftCode = "",
+                //    pNoRodsBolos = model.BolosOrRods ?? 0m,
+                //    pQuantity = model.Quantity,
+                //    ptxtMsg = "",
+                //    pWCResource = String.IsNullOrEmpty(model.MixerLine) ? " " : model.MixerLine // the space is intentional.
 
-                return Ok(new { success = result.return_value, message = result.ptxtMsg });
+                //});
+
+                return Ok(new { success = true, message = "Updated Successfully" });
             }
             catch (Exception ex)
             {
