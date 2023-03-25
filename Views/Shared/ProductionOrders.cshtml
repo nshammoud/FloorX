@@ -82,18 +82,18 @@
     @String.Format("{0:0.00}", job.Quantity),
     @String.Format("{0:0.00}", job.FinishedQuantity),
     '@job.UnitofMeasureCode',
-    @*'@job.ScreenType',*@
+    '@job.OutputScreenVersionText',
     '@job.ItemCategoryCode',
-    @*'@(job.ShowStandardReporting? String.Format("Std Reporting Qty: {0:0.00} {1}", job.StandardReportingQty, job.StandardReportingUoM) : "")',
-    '@(job.ShowStandardReporting)',
-    '@(job.StandardReportingQty)',
-    '@(job.StandardReportingUoM)',
-    @(job.CartOrContainerRequired ? "true" : "false"),
-    '@(job.WorkCenter)',
-    '@(job.RequireMixerLine ? job.ResourceCaption : "")',*@
+    '',
+    '',
+    '',
+    '',
+    'true',
+    '',
+    '@job.ResourceCaption',
     @(string.Format("{0:0.00}", job.RemainingQuantity)),
     @(job.EnableItemValidation ? "true" : "false"),
-    @*@String.Format("{0:0.0}", job.AllowedOverOutputPercent),*@
+    '',
      @(job.AllowOverReportConsumption ? "true" : "false")
     )">
                         <i class="fa fa-chevron-right"></i>
@@ -132,4 +132,26 @@
         }
     </tbody>
 </table>
+
+@*NSH*@
+@*onclick="selectJob(
+    '@job.ProdOrderNo',
+    '@job.ItemNo',
+@String.Format("{0:0.00}", job.Quantity),
+@String.Format("{0:0.00}", job.FinishedQuantity),
+    '@job.UnitofMeasureCode',
+    '@job.OutputScreenVersionText',
+    '@job.ItemCategoryCode',
+    '',
+    '',
+    '',
+    '',
+    'true',
+    '',
+    '@job.ResourceCaption',
+@(string.Format("{0:0.00}", job.RemainingQuantity)),
+@(job.EnableItemValidation ? "true" : "false"),
+    '',
+@(job.AllowOverReportConsumption ? "true" : "false")
+    )"*@
 
