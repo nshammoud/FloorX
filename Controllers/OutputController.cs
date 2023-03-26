@@ -234,6 +234,7 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
+                // NSH
                 var obj = new
                 {
                     pProdOrderNo = model.JobNumber,
@@ -248,7 +249,7 @@ namespace KQF.Floor.Web.Controllers
                 };
                 var companyId = HttpContext.Session.GetString("CompanyID");
                 var apiHelper = new BusinessCentralApiHelper(_loginApiConfig.Value, HttpContext);
-                // we will our own API here
+                // we will use our own API here
                 var ordersDetailApi = string.Format(_businessApis.Value.productionManagement, companyId, "Microsoft.NAV.postOutputJournal");
                 var orderDetailApi = $"{_businessApis.Value.BaseUrl}{ordersDetailApi}";
                 var result = apiHelper.PostApiResponse<dynamic>(orderDetailApi, obj);
