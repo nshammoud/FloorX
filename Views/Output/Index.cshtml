@@ -68,8 +68,11 @@
 
                 <div class="row mb-3">
                     <div class="col-sm-4 p-2">
-                        <label for="exampleFormControlInput1 " class="form-label h4 show2 hide1 hide3 mixer-ctrl" id="mixerCaption">Mixer</label>
-                        <select class="form-select show2 hide1 hide3 validated-ctrl mixer-ctrl" aria-label="Default select example" id="mixerSelect">
+                        @*NSH*@
+                        @*<label for="exampleFormControlInput1 " class="form-label h4 show2 hide1 hide3 mixer-ctrl" id="mixerCaption">Mixer</label>
+                        <select class="form-select show2 hide1 hide3 validated-ctrl mixer-ctrl" aria-label="Default select example" id="mixerSelect">*@
+                        <label for="exampleFormControlInput1 " class="form-label h4 show2 mixer-ctrl" id="mixerCaption">Mixer</label>
+                        <select class="form-select show2 validated-ctrl mixer-ctrl" aria-label="Default select example" id="mixerSelect">
                             <option selected value="0">Select a Mixer</option>
                             <option value="1">Mixer 1</option>
                             <option value="2">Mixer 2</option>
@@ -296,7 +299,7 @@
             if (currentJob && currentJob.trim().length > 0) {
                 // Job was selected.
                 scanConfirmEveryScan = $(`button[data-job-id=${jobNumber}]`).data("validate-every-output") === true;
-
+                
                 $(`.hide${ver}`).removeClass("visually-hidden").addClass("visually-hidden");
                 $(`.show${ver}`).removeClass("visually-hidden");
 
@@ -306,7 +309,8 @@
                     currentItem.scanConfirmed = false;
                 } else {
                     if ((caption || '').trim() === '') { // Hide the mixer if caption is null
-                        $(".mixer-ctrl").addClass("visually-hidden");
+                        // NSH just usntil mixerAPi is not fixed
+                        // $(".mixer-ctrl").addClass("visually-hidden");
 
                     }
                 }
@@ -384,28 +388,45 @@
                 .find('option')
                 .remove();
 
-            $("#mixerCaption").text(caption);
-
-            if ((caption || '').trim() === '') { // Hide the mixer if caption is null
-                $(".mixer-ctrl").addClass("visually-hidden");
-                return;
-            }
+            $("#mixerCaption").text('Line');
 
 
-            $.get('@Url.Action("MixerList")' + `?code=${wc}`, (r) => {
-                if ((r || []).length > 0) {
-                     $('#mixerSelect')
-                        .find('option')
-                        .remove()
-                        .end()
-                        .append(`<option selected value="0">Select a ${caption}</option>`)
-                        .val(0);
 
-                    r.forEach((o) => {
-                        $('#mixerSelect').append(`<option value="${o.name}">${o.name}</option>`);
-                    });
-                }
-            });
+                //NSH as caption is null right now
+            //$("#mixerCaption").text(caption);
+
+            //if ((caption || '').trim() === '') { // Hide the mixer if caption is null
+            //    $(".mixer-ctrl").addClass("visually-hidden");
+            //    return;
+            //}
+
+            // NSH as Api is not working right now
+        //    $.get('Url.Action("MixerList")' + `?code=${wc}`, (r) => {
+        //        if ((r || []).length > 0) {
+        //             $('#mixerSelect')
+        //                .find('option')
+        //                .remove()
+        //                .end()
+        //                .append(`<option selected value="0">Select a Line</option>`)
+        //                .val(0);
+
+        //            r.forEach((o) => {
+        //                $('#mixerSelect').append(`<option value="${o.name}">${o.name}</option>`);
+        //            });
+        //        }
+        //    });
+
+
+        $('#mixerSelect')
+            .find('option')
+            .remove()
+            .end()
+            .append("<option selected value='0'>Select a Line</option>")
+            .val(0);
+
+        $('#mixerSelect').append("<option value='orange'>01ORANGE</option>");
+        $('#mixerSelect').append("<option value='purple'>02PURPLE</option>");
+
         }
 
         function validationFail(key) {
