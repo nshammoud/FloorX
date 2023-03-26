@@ -77,6 +77,7 @@
                             data-job-date="@job.StartingDate"
                             class="btn btn-outline-success btn-job-toggle"
                             onclick="selectJob(
+    /* NSH*/
     '@job.ProdOrderNo',
     '@job.ItemNo',
     @String.Format("{0:0.00}", job.Quantity),
@@ -95,7 +96,9 @@
     @(job.EnableItemValidation ? "true" : "false"),
     '',
      @(job.AllowOverReportConsumption ? "true" : "false")
+    /* NSH*/
     )">
+
                         <i class="fa fa-chevron-right"></i>
                     </button>
                 </td>
@@ -133,7 +136,7 @@
     </tbody>
 </table>
 
-@*NSH*@
+@*NSH Original Code *@ 
 @*onclick="selectJob(
     '@job.ProdOrderNo',
     '@job.ItemNo',

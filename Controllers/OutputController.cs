@@ -167,7 +167,7 @@ namespace KQF.Floor.Web.Controllers
             }
 
             
-            //NSH >>
+            // << NSH 
             //results = await _productOrders.ReadMultipleAsync(new MWSProductionOrderListV2_Filter[] {
             //     new MWSProductionOrderListV2_Filter()
             //    {
@@ -189,7 +189,7 @@ namespace KQF.Floor.Web.Controllers
             //    .Where(x => iccs.Contains(x.ItemCategory.ToLower()))
             //     .OrderBy(x => x.StartDate)
             //    .ToArray();
-            //<<NSH
+            // NSH >>
 
             var list = ordersList.ReturnList;
             if(list != null && !string.IsNullOrEmpty(locationCode))
@@ -197,7 +197,7 @@ namespace KQF.Floor.Web.Controllers
                 list = list.Where(x => x.LocationCode.Contains(locationCode)).ToArray();
             }
 
-            //>> NSH
+            //<< NSH
             //if (list != null && !string.IsNullOrEmpty(criteria)) 
             //{
             //    list = list.Where(x => x.StartingDate >= StrDateFrom).ToArray();
@@ -207,7 +207,7 @@ namespace KQF.Floor.Web.Controllers
             {
                 list = list.Where(x => x.StartingDate >= StrDateFrom && x.StartingDate <= StrDateTo).ToArray();
             }
-            //<< NSH
+            // NSH >>
 
             return PartialView(list);
         }
@@ -234,6 +234,7 @@ namespace KQF.Floor.Web.Controllers
         {
             try
             {
+                //<< NSH
                 var obj = new
                 {
                     pProdOrderNo = model.JobNumber,
@@ -253,7 +254,6 @@ namespace KQF.Floor.Web.Controllers
                 var orderDetailApi = $"{_businessApis.Value.BaseUrl}{ordersDetailApi}";
                 var result = apiHelper.PostApiResponse<dynamic>(orderDetailApi, obj);
 
-                // NSH
                 //var result = await _prodMgmtClient.PostOutputAsync(new PostOutput()
                 //{
                 //    pCartID = model.UseCartId ? (string.IsNullOrEmpty(model.ContainerNo) ? " " : model.ContainerNo) : " ",
@@ -268,6 +268,7 @@ namespace KQF.Floor.Web.Controllers
                 //    pWCResource = String.IsNullOrEmpty(model.MixerLine) ? " " : model.MixerLine // the space is intentional.
 
                 //});
+                // NSH >>
 
                 return Ok(new { success = true, message = "Updated Successfully" });
             }
